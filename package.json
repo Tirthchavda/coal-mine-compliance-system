@@ -1,0 +1,11 @@
+{
+  "name": "coal-mine-statutory-compliance-system",
+  "version": "1.0.0",
+  "description": "Coal Mine Statutory Compliance & Governance Monitoring System",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  }
+}
+

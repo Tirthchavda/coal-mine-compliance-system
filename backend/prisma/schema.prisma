@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  HQ_MANAGEMENT
+  MINE_MANAGER
+  SAFETY_INSPECTOR
+  COMPLIANCE_OFFICER
+  CONTRACTOR
+}
+
+enum MineType {
+  OPENCAST
+  UNDERGROUND
+  MIXED
+}
+
+enum MineStatus {
+  OPERATIONAL
+  SUSPENDED
+  TEMPORARILY_CLOSED
+  ABANDONED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum StatutoryCategory {
+  SAFETY
+  LABOUR
+  ENVIRONMENTAL
+  MINING
+  STATUTORY
+  OPERATIONAL
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  PARTIALLY_COMPLIANT
+  NON_COMPLIANT
+  PENDING
+  EXPIRED
+}
+
+enum InspectionType {
+  ROUTINE_STATUTORY
+  DGMS_SURPRISE
+  SAFETY_AUDIT
+  ENVIRONMENTAL_AUDIT
+  VENTILATION_SPECIAL
+  ELECTRICAL_MECHANICAL
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ViolationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ViolationStatus {
+  OPEN
+  IN_PROGRESS
+  ACTION_SUBMITTED
+  UNDER_VERIFICATION
+  RESOLVED
+  CLOSED
+}
+
+enum ActionStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING_VERIFICATION
+  COMPLETED
+  OVERDUE
+  CLOSED
+}
+
+enum DocumentCategory {
+  DGMS_APPROVAL
+  ENVIRONMENTAL_CLEARANCE
+  CONSENT_TO_OPERATE
+  MINING_PLAN
+  STATUTORY_FORM_IV
+  SAFETY_COMMITTEE_MINUTES
+  OTHER
+}
+
+model User {
+  id             String    @id @default(uuid())
+  name           String
+  email          String    @unique
+  password       String
+  role           UserRole  @default(COMPLIANCE_OFFICER)
+  department     String
+  phone          String?
+  assignedMineId String?
+  status         String    @default("ACTIVE")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Mine {
+  id              String      @id @default(uuid())
+  code            String      @unique
+  name            String
+  type            MineType    @default(OPENCAST)
+  status          MineStatus  @default(OPERATIONAL)
+  owner           String
+  subsidiary      String
+  location        String
+  state           String
+  district        String
+  latitude        Float
+  longitude       Float
+  areaHectares    Float
+  productionCapMT Float
+  complianceScore Float       @default(85.0)
+  riskLevel       RiskLevel   @default(LOW)
+  managerId       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model ComplianceRequirement {
+  id                  String            @id @default(uuid())
+  code                String            @unique
+  title               String
+  category            StatutoryCategory
+  regulatoryAuthority String
+  regulationReference String
+  requirement         String
+  frequency           String
+  penaltyClause       String?
+  priority            Priority          @default(HIGH)
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+model ComplianceRecord {
+  id                   String           @id @default(uuid())
+  requirementId        String
+  mineId               String
+  status               ComplianceStatus @default(PENDING)
+  applicableDate       DateTime
+  dueDate              DateTime
+  lastVerifiedAt       DateTime?
+  responsibleOfficerId String?
+  riskLevel            RiskLevel        @default(LOW)
+  remarks              String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+model Inspection {
+  id             String           @id @default(uuid())
+  mineId         String
+  inspectorId    String
+  inspectionType InspectionType   @default(ROUTINE_STATUTORY)
+  scheduledDate  DateTime
+  completedDate  DateTime?
+  status         InspectionStatus @default(SCHEDULED)
+  summary        String
+  overallScore   Float?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model InspectionFinding {
+  id           String            @id @default(uuid())
+  inspectionId String
+  checklistItem String
+  category     StatutoryCategory
+  observation  String
+  isViolation  Boolean           @default(false)
+  severity     ViolationSeverity @default(MEDIUM)
+  createdAt    DateTime          @default(now())
+}
+
+model Violation {
+  id                  String            @id @default(uuid())
+  mineId              String
+  complianceRecordId  String?
+  inspectionId        String?
+  title               String
+  description         String
+  category            StatutoryCategory
+  severity            ViolationSeverity @default(HIGH)
+  status              ViolationStatus   @default(OPEN)
+  reportedDate        DateTime          @default(now())
+  deadline            DateTime
+  resolvedDate        DateTime?
+  responsiblePersonId String?
+  aiRecommendation    String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+model CorrectiveAction {
+  id                 String       @id @default(uuid())
+  violationId        String
+  mineId             String
+  title              String
+  description        String
+  assignedToId       String?
+  priority           Priority     @default(HIGH)
+  status             ActionStatus @default(OPEN)
+  progressPercentage Int          @default(0)
+  deadline           DateTime
+  completedDate      DateTime?
+  verifiedById       String?
+  verificationDate   DateTime?
+  remarks            String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+model Document {
+  id                 String           @id @default(uuid())
+  title              String
+  category           DocumentCategory
+  mineId             String
+  uploadedById       String?
+  fileUrl            String
+  fileType           String
+  fileSize           Int
+  originalName       String
+  expiryDate         DateTime?
+  verificationStatus String           @default("VALID")
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model SafetyRecord {
+  id                String            @id @default(uuid())
+  mineId            String
+  date              DateTime          @default(now())
+  incidentType      String
+  severity          ViolationSeverity @default(LOW)
+  description       String
+  locationInMine    String
+  ppeComplianceRate Float
+  gasLevelCH4       Float
+  gasLevelCO        Float
+  reportedById      String?
+  createdAt         DateTime          @default(now())
+}
+
+model EnvironmentalRecord {
+  id                        String   @id @default(uuid())
+  mineId                    String
+  date                      DateTime @default(now())
+  pm10                      Float
+  pm25                      Float
+  so2                       Float
+  nox                       Float
+  waterPh                   Float
+  waterTds                  Float
+  waterCod                  Float
+  noiseDb                   Float
+  overburdenStabilityStatus String   @default("STABLE")
+  warningTriggered          Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+}
+
+model Alert {
+  id        String    @id @default(uuid())
+  mineId    String?
+  title     String
+  message   String
+  type      String    @default("COMPLIANCE")
+  severity  RiskLevel @default(MEDIUM)
+  isRead    Boolean   @default(false)
+  linkUrl   String?
+  createdAt DateTime  @default(now())
+}
+
+model AIPrediction {
+  id              String    @id @default(uuid())
+  mineId          String    @unique
+  riskScore       Float
+  riskLevel       RiskLevel
+  confidence      Float
+  factors         String
+  recommendations String
+  isAccepted      Boolean?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  reviewRemarks   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  userName  String
+  userRole  String
+  action    String
+  entity    String
+  entityId  String
+  oldValues String?
+  newValues String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
