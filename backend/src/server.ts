@@ -36,13 +36,24 @@ if (!fs.existsSync(uploadDir)) {
   } catch (e) {}
 }
 
-// Middleware
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Universal Robust CORS Middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -52,7 +63,7 @@ app.use('/uploads', express.static(uploadDir));
 // API Documentation
 setupSwagger(app);
 
-// Root & Health check
+// Root Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'HEALTHY',
@@ -79,15 +90,45 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/users', userRoutes);
 
+// Check if Frontend Static Build is available and serve it
+const candidateDistPaths = [
+  path.resolve(process.cwd(), '../frontend/dist'),
+  path.resolve(process.cwd(), 'frontend/dist'),
+  path.resolve(process.cwd(), 'dist'),
+  path.resolve(process.cwd(), '../dist')
+];
+
+const frontendDistPath = candidateDistPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+if (frontendDistPath) {
+  console.log(`Serving unified Frontend Static UI from: ${frontendDistPath}`);
+  app.use(express.static(frontendDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.status(200).json({
+      status: 'ONLINE',
+      service: 'Coal Mine Statutory Compliance & Governance Monitoring Backend',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0'
+    });
+  });
+}
+
 // Centralized error handling
 app.use(errorHandler);
 
-// Start Server if run directly
+// Start Server binding on 0.0.0.0 for cloud containers
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`================================================================`);
     console.log(` Coal Mine Statutory Compliance & Governance Monitoring Backend `);
-    console.log(` Active Port: http://localhost:${PORT}                          `);
+    console.log(` Active Port: http://0.0.0.0:${PORT}                          `);
     console.log(` OpenAPI Docs: http://localhost:${PORT}/api/docs                 `);
     console.log(` Health Check: http://localhost:${PORT}/api/health               `);
     console.log(`================================================================`);
@@ -95,4 +136,3 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 export default app;
-

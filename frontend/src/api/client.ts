@@ -1,22 +1,39 @@
 import axios from 'axios';
 
-let baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
-if (baseURL && !baseURL.startsWith('http') && !baseURL.startsWith('/')) {
-  baseURL = `https://${baseURL}`;
-}
-if (baseURL && baseURL.startsWith('http') && !baseURL.endsWith('/api')) {
-  baseURL = `${baseURL}/api`;
-}
+// Dynamically determine the active API Base URL
+export const getApiBaseUrl = (): string => {
+  // 1. Check if user configured a custom URL in localStorage
+  const savedUrl = localStorage.getItem('coal_gov_api_url');
+  if (savedUrl && savedUrl.trim()) {
+    let u = savedUrl.trim();
+    if (!u.startsWith('http') && !u.startsWith('/')) u = `https://${u}`;
+    if (u.startsWith('http') && !u.endsWith('/api')) u = `${u}/api`;
+    return u;
+  }
+
+  // 2. Check environment variable if explicitly provided
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl.trim()) {
+    let u = envUrl.trim();
+    if (!u.startsWith('http') && !u.startsWith('/')) u = `https://${u}`;
+    if (u.startsWith('http') && !u.endsWith('/api')) u = `${u}/api`;
+    return u;
+  }
+
+  // 3. Default relative '/api' for same-origin local & unified cloud deployment
+  return '/api';
+};
 
 export const api = axios.create({
-  baseURL,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Auto-inject JWT token from localStorage
+// Update dynamic baseURL and JWT token on every request
 api.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
   const token = localStorage.getItem('coal_gov_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -31,7 +48,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // If unauthorized and not on login page, redirect to login
       if (!window.location.pathname.includes('/login')) {
         localStorage.removeItem('coal_gov_token');
         localStorage.removeItem('coal_gov_user');
