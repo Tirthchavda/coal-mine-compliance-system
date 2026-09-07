@@ -1,7 +1,15 @@
 import axios from 'axios';
 
+let baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+if (baseURL && !baseURL.startsWith('http') && !baseURL.startsWith('/')) {
+  baseURL = `https://${baseURL}`;
+}
+if (baseURL && baseURL.startsWith('http') && !baseURL.endsWith('/api')) {
+  baseURL = `${baseURL}/api`;
+}
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -33,4 +41,3 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
