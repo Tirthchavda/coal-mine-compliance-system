@@ -18,10 +18,8 @@ services:
         value: 7d
 
   # Frontend Static Site
-  - type: web
+  - type: static
     name: coal-compliance-frontend
-    runtime: static
-    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
@@ -35,4 +33,3 @@ services:
           type: web
           name: coal-compliance-backend
           property: host
-
