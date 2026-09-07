@@ -80,6 +80,25 @@ export const Violations: React.FC = () => {
       }
     } catch (err) {
       console.warn('Using pre-seeded DGMS statutory violation notices');
+      let filtered = [...MOCK_VIOLATIONS];
+      if (search) {
+        const q = search.toLowerCase();
+        filtered = filtered.filter(v =>
+          v.title.toLowerCase().includes(q) ||
+          v.description.toLowerCase().includes(q) ||
+          v.mine?.name?.toLowerCase().includes(q)
+        );
+      }
+      if (mineId) {
+        filtered = filtered.filter(v => v.mineId === mineId);
+      }
+      if (severityFilter) {
+        filtered = filtered.filter(v => v.severity === severityFilter);
+      }
+      if (statusFilter) {
+        filtered = filtered.filter(v => v.status === statusFilter);
+      }
+      setViolations(filtered);
     } finally {
       setIsLoading(false);
     }
@@ -198,6 +217,11 @@ export const Violations: React.FC = () => {
     }
   ];
 
+  const criticalCount = MOCK_VIOLATIONS.filter(v => v.severity === 'CRITICAL').length;
+  const highCount = MOCK_VIOLATIONS.filter(v => v.severity === 'HIGH').length;
+  const mediumCount = MOCK_VIOLATIONS.filter(v => v.severity === 'MEDIUM').length;
+  const lowCount = MOCK_VIOLATIONS.filter(v => v.severity === 'LOW').length;
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
@@ -221,6 +245,76 @@ export const Violations: React.FC = () => {
             Issue Violation Notice
           </button>
         )}
+      </div>
+
+      {/* Severity Breakdown Cards (Quick Filters) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          {
+            name: 'CRITICAL',
+            label: 'Critical Severity',
+            count: criticalCount,
+            percent: Math.round((criticalCount / MOCK_VIOLATIONS.length) * 100),
+            desc: 'Section 22A Stop Work',
+            bg: 'bg-rose-50 border-rose-200 text-rose-900',
+            badge: 'bg-rose-600 text-white',
+            activeRing: severityFilter === 'CRITICAL' ? 'ring-2 ring-rose-500 shadow-md' : 'opacity-85 hover:opacity-100',
+            icon: '🔴'
+          },
+          {
+            name: 'HIGH',
+            label: 'High Risk',
+            count: highCount,
+            percent: Math.round((highCount / MOCK_VIOLATIONS.length) * 100),
+            desc: '14-Day Rectification',
+            bg: 'bg-orange-50 border-orange-200 text-orange-900',
+            badge: 'bg-orange-600 text-white',
+            activeRing: severityFilter === 'HIGH' ? 'ring-2 ring-orange-500 shadow-md' : 'opacity-85 hover:opacity-100',
+            icon: '🟠'
+          },
+          {
+            name: 'MEDIUM',
+            label: 'Medium Risk',
+            count: mediumCount,
+            percent: Math.round((mediumCount / MOCK_VIOLATIONS.length) * 100),
+            desc: 'Operational Defect Notice',
+            bg: 'bg-amber-50 border-amber-200 text-amber-900',
+            badge: 'bg-amber-600 text-white',
+            activeRing: severityFilter === 'MEDIUM' ? 'ring-2 ring-amber-500 shadow-md' : 'opacity-85 hover:opacity-100',
+            icon: '🟡'
+          },
+          {
+            name: 'LOW',
+            label: 'Low Advisory',
+            count: lowCount,
+            percent: Math.round((lowCount / MOCK_VIOLATIONS.length) * 100),
+            desc: 'Advisory / Minor Record',
+            bg: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+            badge: 'bg-emerald-600 text-white',
+            activeRing: severityFilter === 'LOW' ? 'ring-2 ring-emerald-500 shadow-md' : 'opacity-85 hover:opacity-100',
+            icon: '🟢'
+          }
+        ].map((s) => (
+          <div
+            key={s.name}
+            onClick={() => setSeverityFilter(severityFilter === s.name ? '' : s.name)}
+            className={`p-3 rounded-xl border transition-all cursor-pointer shadow-xs ${s.bg} ${s.activeRing}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black tracking-tight flex items-center gap-1.5">
+                <span>{s.icon}</span> {s.name}
+              </span>
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${s.badge}`}>
+                {s.percent}%
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-1.5">
+              <span className="text-2xl font-black">{s.count}</span>
+              <span className="text-xs font-semibold opacity-75">notices</span>
+            </div>
+            <p className="text-[10px] opacity-75 mt-0.5 truncate">{s.desc}</p>
+          </div>
+        ))}
       </div>
 
       {/* Filter Bar */}

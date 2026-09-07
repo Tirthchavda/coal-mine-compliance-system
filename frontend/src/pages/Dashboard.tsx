@@ -118,18 +118,64 @@ export const Dashboard: React.FC = () => {
   const monthlyTrends = data?.monthlyTrends || DEFAULT_DASHBOARD_DATA.monthlyTrends;
   const topMines = data?.topMines || DEFAULT_DASHBOARD_DATA.topMines;
 
-  // Chart Color Palettes
-  const SEVERITY_COLORS: Record<string, string> = {
-    CRITICAL: '#e11d48',
-    HIGH: '#f97316',
-    MEDIUM: '#eab308',
-    LOW: '#10b981'
-  };
+  // Dynamic severity breakdown from violations
+  const rawSeverityCounts = severityCounts || DEFAULT_DASHBOARD_DATA.severityCounts;
+  const criticalCount = Number(rawSeverityCounts?.CRITICAL ?? 4);
+  const highCount = Number(rawSeverityCounts?.HIGH ?? 6);
+  const mediumCount = Number(rawSeverityCounts?.MEDIUM ?? 3);
+  const lowCount = Number(rawSeverityCounts?.LOW ?? 2);
+  const totalViolationsCount = criticalCount + highCount + mediumCount + lowCount || 15;
 
-  const severityPieData = Object.entries(severityCounts || {}).map(([name, value]) => ({
-    name,
-    value: Number(value)
-  }));
+  const severityPieData = [
+    {
+      name: 'CRITICAL',
+      label: 'Critical Priority',
+      value: criticalCount,
+      percent: Math.round((criticalCount / totalViolationsCount) * 100),
+      color: '#e11d48',
+      lightBg: 'bg-rose-50 border-rose-200 text-rose-900',
+      badgeBg: 'bg-rose-600 text-white',
+      desc: 'Immediate Prohibition (Sec 22A)',
+      fine: '₹5,00,000 max',
+      icon: '🔴'
+    },
+    {
+      name: 'HIGH',
+      label: 'High Priority',
+      value: highCount,
+      percent: Math.round((highCount / totalViolationsCount) * 100),
+      color: '#ea580c',
+      lightBg: 'bg-orange-50 border-orange-200 text-orange-900',
+      badgeBg: 'bg-orange-600 text-white',
+      desc: '14-Day DGMS Rectification',
+      fine: '₹3,00,000 max',
+      icon: '🟠'
+    },
+    {
+      name: 'MEDIUM',
+      label: 'Medium Risk',
+      value: mediumCount,
+      percent: Math.round((mediumCount / totalViolationsCount) * 100),
+      color: '#d97706',
+      lightBg: 'bg-amber-50 border-amber-200 text-amber-900',
+      badgeBg: 'bg-amber-600 text-white',
+      desc: 'Operational Defect Notice',
+      fine: '₹1,00,000 max',
+      icon: '🟡'
+    },
+    {
+      name: 'LOW',
+      label: 'Low Advisory',
+      value: lowCount,
+      percent: Math.round((lowCount / totalViolationsCount) * 100),
+      color: '#16a34a',
+      lightBg: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+      badgeBg: 'bg-emerald-600 text-white',
+      desc: 'Advisory / Minor Record',
+      fine: '₹30,000 max',
+      icon: '🟢'
+    }
+  ];
 
   return (
     <div className="space-y-6 pb-12">
@@ -347,48 +393,111 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Violations by Severity (Donut Chart) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="mb-2">
-            <h3 className="text-sm font-bold text-slate-900">Violations by Severity</h3>
-            <p className="text-xs text-slate-500">Live breakdown of active enforcement alerts</p>
+        {/* Violations by Severity (Enhanced Visual Gauge & Donut Chart) */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+                <AlertOctagon className="w-4 h-4 text-rose-600" />
+                Violations by Severity
+              </h3>
+              <p className="text-xs text-slate-500">Live breakdown of active enforcement alerts</p>
+            </div>
+            <button
+              onClick={() => navigate('/violations')}
+              className="text-xs text-gov-primary hover:underline font-bold flex items-center gap-1 bg-gov-primary/5 px-2.5 py-1 rounded-lg border border-gov-primary/20"
+            >
+              Total {totalViolationsCount} Notices →
+            </button>
           </div>
 
-          <div className="h-56 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={severityPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {severityPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={SEVERITY_COLORS[entry.name] || '#94a3b8'} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', fontSize: '11px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-xl font-extrabold text-slate-900">{kpis?.activeViolations ?? 14}</span>
-              <span className="text-[10px] text-slate-500 font-semibold uppercase">Violations</span>
+          {/* Visual Segmented Health Bar */}
+          <div>
+            <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-1.5">
+              <span>Severity Distribution Spectrum</span>
+              <span className="font-mono text-slate-500">100% Active Enforcement</span>
+            </div>
+            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+              {severityPieData.map((item) => (
+                <div
+                  key={item.name}
+                  style={{ width: `${item.percent}%`, backgroundColor: item.color }}
+                  className="h-full transition-all hover:opacity-90 relative"
+                  title={`${item.name}: ${item.value} (${item.percent}%)`}
+                ></div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-100 text-xs">
-            {severityPieData.map((item) => (
-              <div key={item.name} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: SEVERITY_COLORS[item.name] }}></span>
-                <span className="text-slate-600 font-medium">{item.name}:</span>
-                <span className="font-bold text-slate-900">{item.value}</span>
+          {/* Donut Chart & Center Metric */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <div className="h-48 w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={severityPieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={48}
+                    outerRadius={74}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {severityPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="#ffffff" strokeWidth={2} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const d = payload[0].payload;
+                        return (
+                          <div className="bg-slate-900 text-white p-2.5 rounded-lg shadow-xl text-xs border border-slate-700 space-y-1">
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <span>{d.icon}</span>
+                              <span>{d.name} SEVERITY</span>
+                            </div>
+                            <p className="text-gov-gold font-extrabold text-sm">{d.value} Active Notices ({d.percent}%)</p>
+                            <p className="text-[10px] text-slate-300">{d.desc}</p>
+                            <p className="text-[10px] text-slate-400">Statutory Fine: {d.fine}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-black text-slate-900">{totalViolationsCount}</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Alerts</span>
               </div>
-            ))}
+            </div>
+
+            {/* 4 Interactive Severity Cards */}
+            <div className="grid grid-cols-2 gap-2">
+              {severityPieData.map((item) => (
+                <div
+                  key={item.name}
+                  onClick={() => navigate(`/violations?severity=${item.name}`)}
+                  className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${item.lightBg}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold tracking-tight flex items-center gap-1">
+                      <span>{item.icon}</span> {item.name}
+                    </span>
+                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${item.badgeBg}`}>
+                      {item.percent}%
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-xl font-black">{item.value}</span>
+                    <span className="text-[10px] font-semibold opacity-80">notices</span>
+                  </div>
+                  <p className="text-[9px] opacity-75 mt-0.5 truncate">{item.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
