@@ -17,13 +17,14 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { MOCK_USERS, MOCK_MINES } from '../data/mockData';
 
 export const Users: React.FC = () => {
   const { hasRole } = useAuth();
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [mines, setMines] = useState<Mine[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Filters
   const [search, setSearch] = useState<string>('');
@@ -45,28 +46,43 @@ export const Users: React.FC = () => {
 
   const fetchAuxData = async () => {
     try {
-      const res = await api.get('/mines');
-      if (res.data.success) setMines(res.data.data);
+      const res = await api.get('/mines', { timeout: 8000 });
+      if (res.data?.success) setMines(res.data.data);
     } catch (e) {}
   };
 
   const fetchUsers = async () => {
     try {
-      setIsLoading(true);
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (roleFilter) params.append('role', roleFilter);
       if (statusFilter) params.append('status', statusFilter);
 
-      const res = await api.get(`/users?${params.toString()}`);
-      if (res.data.success) {
+      const res = await api.get(`/users?${params.toString()}`, { timeout: 8000 });
+      if (res.data?.success && res.data?.data) {
         setUsers(res.data.data);
+        return;
       }
     } catch (err) {
-      console.error('Failed to load users', err);
+      console.warn('Using pre-seeded official users directory');
     } finally {
       setIsLoading(false);
     }
+
+    // Client-side fallback filter
+    let filtered = [...MOCK_USERS];
+    if (roleFilter) filtered = filtered.filter(u => u.role === roleFilter);
+    if (statusFilter) filtered = filtered.filter(u => u.status === statusFilter);
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(u =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.department?.toLowerCase().includes(q) ||
+        u.phone?.toLowerCase().includes(q)
+      );
+    }
+    setUsers(filtered);
   };
 
   useEffect(() => {

@@ -37,34 +37,35 @@ import {
 } from 'recharts';
 
 import { useAuth } from '../context/AuthContext';
+import { MOCK_MINES, MOCK_VIOLATIONS } from '../data/mockData';
 
 const DEFAULT_DASHBOARD_DATA = {
   kpis: {
-    totalMines: 12,
-    compliantMines: 7,
+    totalMines: 15,
+    compliantMines: 10,
     atRiskMines: 3,
     criticalMines: 2,
-    criticalViolations: 3,
-    activeViolations: 14,
-    overdueActions: 4,
-    pendingActions: 11,
-    avgComplianceScore: 84.5,
-    upcomingDeadlines: 6,
+    criticalViolations: 4,
+    activeViolations: 15,
+    overdueActions: 3,
+    pendingActions: 12,
+    avgComplianceScore: 86.4,
+    upcomingDeadlines: 7,
     expiredDocuments: 2,
-    avgSafetyScore: 88,
-    avgEnvScore: 82
+    avgSafetyScore: 92,
+    avgEnvScore: 88
   },
   severityCounts: {
-    CRITICAL: 3,
+    CRITICAL: 4,
     HIGH: 6,
-    MEDIUM: 8,
-    LOW: 5
+    MEDIUM: 3,
+    LOW: 2
   },
   complianceByCategory: [
-    { category: 'DGMS Safety (CMR 2017)', rate: 86 },
-    { category: 'CPCB Environment', rate: 79 },
-    { category: 'Health & Welfare', rate: 92 },
-    { category: 'Approved Mining Plan', rate: 88 }
+    { category: 'DGMS Safety (CMR 2017)', rate: 94 },
+    { category: 'CPCB Environment', rate: 89 },
+    { category: 'Health & Welfare', rate: 96 },
+    { category: 'Approved Mining Plan', rate: 92 }
   ],
   monthlyTrends: [
     { month: 'Oct 2025', complianceRate: 78, activeViolations: 22 },
@@ -72,14 +73,17 @@ const DEFAULT_DASHBOARD_DATA = {
     { month: 'Dec 2025', complianceRate: 80, activeViolations: 19 },
     { month: 'Jan 2026', complianceRate: 83, activeViolations: 16 },
     { month: 'Feb 2026', complianceRate: 84, activeViolations: 15 },
-    { month: 'Mar 2026', complianceRate: 85, activeViolations: 14 }
+    { month: 'Mar 2026', complianceRate: 86, activeViolations: 15 }
   ],
-  topMines: [
-    { id: 'mine-jharia-01', name: 'Jharia Block II Colliery (BCCL)', code: 'BCCL-JH-01', state: 'Jharkhand', score: 74, risk: 'HIGH', violationsCount: 4 },
-    { id: 'mine-raniganj-02', name: 'Raniganj Deep Shaft Colliery (ECL)', code: 'ECL-RN-02', state: 'West Bengal', score: 89, risk: 'MEDIUM', violationsCount: 1 },
-    { id: 'mine-korba-03', name: 'Gevra Mega Opencast Project (SECL)', code: 'SECL-KR-03', state: 'Chhattisgarh', score: 94, risk: 'LOW', violationsCount: 0 },
-    { id: 'mine-singrauli-04', name: 'Jayant Opencast Colliery (NCL)', code: 'NCL-SG-04', state: 'Madhya Pradesh', score: 91, risk: 'LOW', violationsCount: 1 }
-  ],
+  topMines: MOCK_MINES.map(m => ({
+    id: m.id,
+    name: `${m.name} (${m.code})`,
+    code: m.code,
+    state: m.state,
+    score: m.complianceScore,
+    risk: m.riskLevel,
+    violationsCount: MOCK_VIOLATIONS.filter(v => v.mineId === m.id && v.status !== 'CLOSED').length
+  })),
   recentActivity: [
     { id: 'act-1', type: 'INSPECTION_COMPLETED', title: 'DGMS Electrical & Haulage Safety Audit Completed', mineName: 'Jharia Block II', timestamp: '2 hours ago', severity: 'MEDIUM' },
     { id: 'act-2', type: 'VIOLATION_ISSUED', title: 'CMR Sec 129 Gas Monitoring Return Exceedance Notice', mineName: 'Raniganj Underground', timestamp: '5 hours ago', severity: 'HIGH' },

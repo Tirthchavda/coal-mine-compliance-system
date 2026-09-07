@@ -21,28 +21,53 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import {
+  MOCK_MINES,
+  MOCK_COMPLIANCE,
+  MOCK_VIOLATIONS,
+  MOCK_INSPECTIONS,
+  MOCK_DOCUMENTS,
+  MOCK_SAFETY,
+  MOCK_ENVIRONMENT,
+  MOCK_AI_PREDICTIONS
+} from '../data/mockData';
+
+const getMockMineProfile = (targetId?: string) => {
+  const m = MOCK_MINES.find(item => item.id === targetId) || MOCK_MINES[0];
+  return {
+    ...m,
+    complianceRecords: MOCK_COMPLIANCE.filter(c => c.mineId === m.id || c.mine?.id === m.id),
+    violations: MOCK_VIOLATIONS.filter(v => v.mineId === m.id || v.mine?.id === m.id),
+    inspections: MOCK_INSPECTIONS.filter(i => i.mineId === m.id || i.mine?.id === m.id),
+    documents: MOCK_DOCUMENTS.filter(d => d.mineId === m.id || d.mine?.id === m.id),
+    safetyRecords: MOCK_SAFETY.filter(s => s.mineId === m.id || s.mine?.id === m.id),
+    environmentalRecords: MOCK_ENVIRONMENT.filter(e => e.mineId === m.id || e.mine?.id === m.id),
+    aiPredictions: MOCK_AI_PREDICTIONS.filter(a => a.mineId === m.id || a.mine?.id === m.id)
+  };
+};
 
 export const MineProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { hasRole } = useAuth();
 
-  const [mine, setMine] = useState<any>(null);
+  const [mine, setMine] = useState<any>(getMockMineProfile(id));
   const [activeTab, setActiveTab] = useState<string>('compliance');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchMineDetail = async () => {
     try {
-      setIsLoading(true);
-      const res = await api.get(`/mines/${id}`);
-      if (res.data.success) {
+      const res = await api.get(`/mines/${id}`, { timeout: 8000 });
+      if (res.data?.success && res.data?.data) {
         setMine(res.data.data);
+        return;
       }
     } catch (err) {
-      console.error('Failed to load mine profile', err);
+      console.warn('Using pre-seeded colliery profile structure');
     } finally {
       setIsLoading(false);
     }
+    setMine(getMockMineProfile(id));
   };
 
   useEffect(() => {

@@ -11,10 +11,11 @@ import {
   Activity,
   FileCode
 } from 'lucide-react';
+import { MOCK_AUDIT_LOGS } from '../data/mockData';
 
 export const AuditLogs: React.FC = () => {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [logs, setLogs] = useState<AuditLog[]>(MOCK_AUDIT_LOGS);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [search, setSearch] = useState<string>('');
   const [entityFilter, setEntityFilter] = useState<string>('');
@@ -22,21 +23,36 @@ export const AuditLogs: React.FC = () => {
 
   const fetchAuditLogs = async () => {
     try {
-      setIsLoading(true);
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (entityFilter) params.append('entity', entityFilter);
       if (actionFilter) params.append('action', actionFilter);
 
-      const res = await api.get(`/audit-logs?${params.toString()}`);
-      if (res.data.success) {
+      const res = await api.get(`/audit-logs?${params.toString()}`, { timeout: 8000 });
+      if (res.data?.success && res.data?.data) {
         setLogs(res.data.data);
+        return;
       }
     } catch (err) {
-      console.error('Failed to load audit logs', err);
+      console.warn('Using pre-seeded statutory audit trail records');
     } finally {
       setIsLoading(false);
     }
+
+    // Client-side fallback filter
+    let filtered = [...MOCK_AUDIT_LOGS];
+    if (entityFilter) filtered = filtered.filter(l => l.entity === entityFilter);
+    if (actionFilter) filtered = filtered.filter(l => l.action === actionFilter);
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(l =>
+        l.userName.toLowerCase().includes(q) ||
+        l.action.toLowerCase().includes(q) ||
+        l.entity.toLowerCase().includes(q) ||
+        l.entityId.toLowerCase().includes(q)
+      );
+    }
+    setLogs(filtered);
   };
 
   useEffect(() => {

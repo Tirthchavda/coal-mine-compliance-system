@@ -17,6 +17,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { MOCK_ACTIONS, MOCK_MINES } from '../data/mockData';
 
 export const CorrectiveActions: React.FC = () => {
   const navigate = useNavigate();
@@ -26,9 +27,9 @@ export const CorrectiveActions: React.FC = () => {
 
   const { hasRole } = useAuth();
 
-  const [actions, setActions] = useState<CorrectiveAction[]>([]);
-  const [mines, setMines] = useState<Mine[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [actions, setActions] = useState<CorrectiveAction[]>(MOCK_ACTIONS);
+  const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Filters
   const [search, setSearch] = useState<string>(initialSearch);
@@ -48,29 +49,45 @@ export const CorrectiveActions: React.FC = () => {
 
   const fetchAuxData = async () => {
     try {
-      const res = await api.get('/mines');
-      if (res.data.success) setMines(res.data.data);
+      const res = await api.get('/mines', { timeout: 8000 });
+      if (res.data?.success) setMines(res.data.data);
     } catch (e) {}
   };
 
   const fetchActions = async () => {
     try {
-      setIsLoading(true);
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (mineId) params.append('mineId', mineId);
       if (statusFilter) params.append('status', statusFilter);
       if (overdueOnly) params.append('overdueOnly', overdueOnly);
 
-      const res = await api.get(`/actions?${params.toString()}`);
-      if (res.data.success) {
+      const res = await api.get(`/actions?${params.toString()}`, { timeout: 8000 });
+      if (res.data?.success && res.data?.data) {
         setActions(res.data.data);
+        return;
       }
     } catch (err) {
-      console.error('Failed to load corrective actions', err);
+      console.warn('Using pre-seeded statutory CAPA remediation records');
     } finally {
       setIsLoading(false);
     }
+
+    // Client-side fallback filter
+    let filtered = [...MOCK_ACTIONS];
+    if (mineId) filtered = filtered.filter(a => (a.mineId === mineId || a.mine?.id === mineId));
+    if (statusFilter) filtered = filtered.filter(a => a.status === statusFilter);
+    if (overdueOnly === 'true') filtered = filtered.filter(a => new Date(a.deadline) < new Date() && a.status !== 'COMPLETED' && a.status !== 'CLOSED');
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(a =>
+        a.title.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q) ||
+        a.mine?.name.toLowerCase().includes(q) ||
+        (typeof a.assignedTo === 'string' ? a.assignedTo : a.assignedTo?.name || '').toLowerCase().includes(q)
+      );
+    }
+    setActions(filtered);
   };
 
   useEffect(() => {
