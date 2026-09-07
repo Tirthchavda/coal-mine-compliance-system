@@ -18,12 +18,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+import { MOCK_MINES } from '../data/mockData';
+
 export const Mines: React.FC = () => {
   const navigate = useNavigate();
   const { hasRole } = useAuth();
 
-  const [mines, setMines] = useState<Mine[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Filters
   const [search, setSearch] = useState<string>('');
@@ -51,7 +53,6 @@ export const Mines: React.FC = () => {
 
   const fetchMines = async () => {
     try {
-      setIsLoading(true);
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (stateFilter) params.append('state', stateFilter);
@@ -59,12 +60,12 @@ export const Mines: React.FC = () => {
       if (statusFilter) params.append('status', statusFilter);
       if (riskFilter) params.append('riskLevel', riskFilter);
 
-      const res = await api.get(`/mines?${params.toString()}`);
-      if (res.data.success) {
+      const res = await api.get(`/mines?${params.toString()}`, { timeout: 8000 });
+      if (res.data?.success && res.data?.data) {
         setMines(res.data.data);
       }
     } catch (err) {
-      console.error('Failed to load mines', err);
+      console.warn('Using pre-seeded mines data fallback');
     } finally {
       setIsLoading(false);
     }

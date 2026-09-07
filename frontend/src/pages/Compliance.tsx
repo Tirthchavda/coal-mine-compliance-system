@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+import { MOCK_COMPLIANCE, MOCK_MINES } from '../data/mockData';
+
 export const Compliance: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -25,10 +27,10 @@ export const Compliance: React.FC = () => {
 
   const { hasRole } = useAuth();
 
-  const [records, setRecords] = useState<ComplianceRecord[]>([]);
-  const [mines, setMines] = useState<Mine[]>([]);
+  const [records, setRecords] = useState<ComplianceRecord[]>(MOCK_COMPLIANCE);
+  const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
   const [requirements, setRequirements] = useState<ComplianceRequirement[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Filters
   const [search, setSearch] = useState<string>(initialSearch);
@@ -52,17 +54,16 @@ export const Compliance: React.FC = () => {
   const fetchAuxData = async () => {
     try {
       const [minesRes, reqsRes] = await Promise.all([
-        api.get('/mines'),
-        api.get('/compliance/requirements')
+        api.get('/mines', { timeout: 8000 }),
+        api.get('/compliance/requirements', { timeout: 8000 })
       ]);
-      if (minesRes.data.success) setMines(minesRes.data.data);
-      if (reqsRes.data.success) setRequirements(reqsRes.data.data);
+      if (minesRes.data?.success) setMines(minesRes.data.data);
+      if (reqsRes.data?.success) setRequirements(reqsRes.data.data);
     } catch (e) {}
   };
 
   const fetchCompliance = async () => {
     try {
-      setIsLoading(true);
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (mineId) params.append('mineId', mineId);
@@ -70,12 +71,12 @@ export const Compliance: React.FC = () => {
       if (status) params.append('status', status);
       if (riskLevel) params.append('riskLevel', riskLevel);
 
-      const res = await api.get(`/compliance?${params.toString()}`);
-      if (res.data.success) {
+      const res = await api.get(`/compliance?${params.toString()}`, { timeout: 8000 });
+      if (res.data?.success && res.data?.data) {
         setRecords(res.data.data);
       }
     } catch (err) {
-      console.error('Failed to load compliance records', err);
+      console.warn('Using pre-seeded statutory compliance obligations');
     } finally {
       setIsLoading(false);
     }

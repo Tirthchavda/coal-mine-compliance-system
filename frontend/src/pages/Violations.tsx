@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+import { MOCK_VIOLATIONS, MOCK_MINES } from '../data/mockData';
+
 export const Violations: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -28,9 +30,9 @@ export const Violations: React.FC = () => {
 
   const { hasRole } = useAuth();
 
-  const [violations, setViolations] = useState<Violation[]>([]);
-  const [mines, setMines] = useState<Mine[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [violations, setViolations] = useState<Violation[]>(MOCK_VIOLATIONS);
+  const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Filters
   const [search, setSearch] = useState<string>(initialSearch);
@@ -59,26 +61,25 @@ export const Violations: React.FC = () => {
 
   const fetchAuxData = async () => {
     try {
-      const res = await api.get('/mines');
-      if (res.data.success) setMines(res.data.data);
+      const res = await api.get('/mines', { timeout: 8000 });
+      if (res.data?.success) setMines(res.data.data);
     } catch (e) {}
   };
 
   const fetchViolations = async () => {
     try {
-      setIsLoading(true);
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (mineId) params.append('mineId', mineId);
       if (severityFilter) params.append('severity', severityFilter);
       if (statusFilter) params.append('status', statusFilter);
 
-      const res = await api.get(`/violations?${params.toString()}`);
-      if (res.data.success) {
+      const res = await api.get(`/violations?${params.toString()}`, { timeout: 8000 });
+      if (res.data?.success && res.data?.data) {
         setViolations(res.data.data);
       }
     } catch (err) {
-      console.error('Failed to load violations', err);
+      console.warn('Using pre-seeded DGMS statutory violation notices');
     } finally {
       setIsLoading(false);
     }

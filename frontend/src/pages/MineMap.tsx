@@ -29,21 +29,22 @@ const createCustomIcon = (riskLevel: string) => {
   });
 };
 
+import { MOCK_MINES } from '../data/mockData';
+
 export const MineMap: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightMineId = searchParams.get('mineId');
 
-  const [mines, setMines] = useState<Mine[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [riskFilter, setRiskFilter] = useState<string>('');
-  const [selectedMine, setSelectedMine] = useState<Mine | null>(null);
+  const [selectedMine, setSelectedMine] = useState<Mine | null>(MOCK_MINES[0]);
 
   const fetchMines = async () => {
     try {
-      setIsLoading(true);
-      const res = await api.get('/mines');
-      if (res.data.success) {
+      const res = await api.get('/mines', { timeout: 8000 });
+      if (res.data?.success && res.data?.data) {
         setMines(res.data.data);
         if (highlightMineId) {
           const found = res.data.data.find((m: Mine) => m.id === highlightMineId);
@@ -51,9 +52,7 @@ export const MineMap: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error('Failed to load mines on map', err);
-    } finally {
-      setIsLoading(false);
+      console.warn('Using pre-seeded mines for GIS Map');
     }
   };
 

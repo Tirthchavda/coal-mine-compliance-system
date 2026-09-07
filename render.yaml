@@ -4,7 +4,7 @@ services:
     name: coal-mine-compliance-system
     runtime: node
     plan: free
-    buildCommand: cd frontend && npm install && node node_modules/vite/bin/vite.js build && cd ../backend && npm install
+    buildCommand: cd frontend && npm install --include=dev && npm run build && cd ../backend && npm install --include=dev
     startCommand: cd backend && npx tsx src/server.ts
     envVars:
       - key: NODE_ENV
