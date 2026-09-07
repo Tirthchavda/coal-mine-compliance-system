@@ -395,7 +395,7 @@ export const Dashboard: React.FC = () => {
 
         {/* Violations by Severity (Enhanced Visual Gauge & Donut Chart) */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
                 <AlertOctagon className="w-4 h-4 text-rose-600" />
@@ -405,99 +405,100 @@ export const Dashboard: React.FC = () => {
             </div>
             <button
               onClick={() => navigate('/violations')}
-              className="text-xs text-gov-primary hover:underline font-bold flex items-center gap-1 bg-gov-primary/5 px-2.5 py-1 rounded-lg border border-gov-primary/20"
+              className="text-xs text-gov-primary hover:text-white bg-gov-primary/10 hover:bg-gov-primary font-bold flex items-center gap-1 px-3 py-1 rounded-lg border border-gov-primary/20 transition-all shadow-xs"
             >
               Total {totalViolationsCount} Notices →
             </button>
           </div>
 
           {/* Visual Segmented Health Bar */}
-          <div>
-            <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-1.5">
+          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+            <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-1.5">
               <span>Severity Distribution Spectrum</span>
-              <span className="font-mono text-slate-500">100% Active Enforcement</span>
+              <span className="font-mono text-slate-500">{totalViolationsCount} Total Active Notices</span>
             </div>
-            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+            <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
               {severityPieData.map((item) => (
                 <div
                   key={item.name}
                   style={{ width: `${item.percent}%`, backgroundColor: item.color }}
                   className="h-full transition-all hover:opacity-90 relative"
                   title={`${item.name}: ${item.value} (${item.percent}%)`}
-                ></div>
+                />
               ))}
             </div>
           </div>
 
-          {/* Donut Chart & Center Metric */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <div className="h-48 w-full relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={severityPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={48}
-                    outerRadius={74}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {severityPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="#ffffff" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const d = payload[0].payload;
-                        return (
-                          <div className="bg-slate-900 text-white p-2.5 rounded-lg shadow-xl text-xs border border-slate-700 space-y-1">
-                            <div className="flex items-center gap-1.5 font-bold">
-                              <span>{d.icon}</span>
-                              <span>{d.name} SEVERITY</span>
-                            </div>
-                            <p className="text-gov-gold font-extrabold text-sm">{d.value} Active Notices ({d.percent}%)</p>
-                            <p className="text-[10px] text-slate-300">{d.desc}</p>
-                            <p className="text-[10px] text-slate-400">Statutory Fine: {d.fine}</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-black text-slate-900">{totalViolationsCount}</span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Alerts</span>
-              </div>
-            </div>
-
-            {/* 4 Interactive Severity Cards */}
-            <div className="grid grid-cols-2 gap-2">
-              {severityPieData.map((item) => (
-                <div
-                  key={item.name}
-                  onClick={() => navigate(`/violations?severity=${item.name}`)}
-                  className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${item.lightBg}`}
+          {/* Donut Chart with proper centered layout */}
+          <div className="h-44 w-full relative flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={severityPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={46}
+                  outerRadius={68}
+                  paddingAngle={4}
+                  dataKey="value"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold tracking-tight flex items-center gap-1">
-                      <span>{item.icon}</span> {item.name}
-                    </span>
-                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${item.badgeBg}`}>
-                      {item.percent}%
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="text-xl font-black">{item.value}</span>
-                    <span className="text-[10px] font-semibold opacity-80">notices</span>
-                  </div>
-                  <p className="text-[9px] opacity-75 mt-0.5 truncate">{item.desc}</p>
-                </div>
-              ))}
+                  {severityPieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke="#ffffff" strokeWidth={2} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-slate-900 text-white p-2.5 rounded-lg shadow-xl text-xs border border-slate-700 space-y-1">
+                          <div className="flex items-center gap-1.5 font-bold">
+                            <span>{d.icon}</span>
+                            <span>{d.name} SEVERITY</span>
+                          </div>
+                          <p className="text-gov-gold font-extrabold text-sm">{d.value} Active Notices ({d.percent}%)</p>
+                          <p className="text-[10px] text-slate-300">{d.desc}</p>
+                          <p className="text-[10px] text-slate-400">Statutory Fine: {d.fine}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-black text-slate-900">{totalViolationsCount}</span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Alerts</span>
             </div>
+          </div>
+
+          {/* 4 Spacious Severity Cards (Clean Grid Below Chart) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            {severityPieData.map((item) => (
+              <div
+                key={item.name}
+                onClick={() => navigate(`/violations?severity=${item.name}`)}
+                className={`p-3 rounded-xl border transition-all cursor-pointer shadow-xs hover:shadow-md hover:scale-[1.01] ${item.lightBg}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-black tracking-tight flex items-center gap-1.5">
+                    <span>{item.icon}</span> {item.name}
+                  </span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${item.badgeBg}`}>
+                    {item.percent}%
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between mt-1">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-xl font-black">{item.value}</span>
+                    <span className="text-xs font-semibold opacity-80">notices</span>
+                  </div>
+                  <span className="text-[10px] font-semibold opacity-75">{item.fine}</span>
+                </div>
+                <p className="text-[10px] opacity-80 mt-1 truncate">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
 
