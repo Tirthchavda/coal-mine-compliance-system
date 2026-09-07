@@ -135,16 +135,12 @@ export const Login: React.FC = () => {
       }
     } catch (err: any) {
       setServerStatus('OFFLINE');
-      setServerPingMsg(
-        'Server waking up or unreachable. If on Render Free tier, it takes ~30s on first request.'
-        'Server is in stand-by. Direct login fallback is active.'
-      );
+      setServerPingMsg('Server is in stand-by. Direct login fallback is active.');
     }
   };
 
   const handleSaveApiUrl = (e: React.FormEvent) => {
     e.preventDefault();
-    if (apiUrl.trim()) {
     if (apiUrl.trim() && apiUrl.trim() !== '/api') {
       localStorage.setItem('coal_gov_api_url', apiUrl.trim());
     } else {
@@ -157,7 +153,6 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!email.trim() || !password.trim()) {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !password.trim()) {
       setError('Please enter both official email address and portal password.');
@@ -167,23 +162,11 @@ export const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await login(email.trim(), password);
       // 1. Try real server API login
       await login(cleanEmail, password.trim());
       navigate('/dashboard');
       return;
     } catch (err: any) {
-      if (err.message === 'Network Error' || !err.response) {
-        setError(
-          `Network Error: Backend server is waking up (takes 20-30s on Render Free tier) or unreachable at ${getApiBaseUrl()}. Please wait a moment and click Sign In again.`
-        );
-      } else {
-        setError(
-          err.response?.data?.error ||
-          err.message ||
-          'Authentication failed. Please verify your official credentials.'
-        );
-      }
       console.warn('Direct server login caught, bypassing network error:', err);
 
       // Auto-fallback: Authenticate locally immediately
@@ -266,7 +249,6 @@ export const Login: React.FC = () => {
             <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-xs space-y-2">
               <div className="flex items-center gap-1.5 text-gov-gold font-bold text-[11px] uppercase tracking-wider">
                 <Info className="w-3.5 h-3.5" />
-                Registered Official Accounts (Reference)
                 Registered Official Accounts (1-Click Select)
               </div>
               <p className="text-[11px] text-slate-400 leading-normal">
@@ -276,7 +258,6 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEmail('admin@coal.gov.in')}
-                  className="text-left hover:text-gov-gold transition-colors"
                   className="text-left hover:text-gov-gold transition-colors truncate"
                 >
                   • <span className="text-slate-400">Super Admin:</span> admin@coal.gov.in
@@ -284,7 +265,6 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEmail('inspector@dgms.gov.in')}
-                  className="text-left hover:text-gov-gold transition-colors"
                   className="text-left hover:text-gov-gold transition-colors truncate"
                 >
                   • <span className="text-slate-400">DGMS Inspector:</span> inspector@dgms.gov.in
@@ -292,7 +272,6 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEmail('hq@coal.gov.in')}
-                  className="text-left hover:text-gov-gold transition-colors"
                   className="text-left hover:text-gov-gold transition-colors truncate"
                 >
                   • <span className="text-slate-400">HQ Management:</span> hq@coal.gov.in
@@ -300,7 +279,6 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEmail('manager@mine.gov.in')}
-                  className="text-left hover:text-gov-gold transition-colors"
                   className="text-left hover:text-gov-gold transition-colors truncate"
                 >
                   • <span className="text-slate-400">Mine Manager:</span> manager@mine.gov.in
@@ -308,7 +286,6 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEmail('compliance@mine.gov.in')}
-                  className="text-left hover:text-gov-gold transition-colors"
                   className="text-left hover:text-gov-gold transition-colors truncate"
                 >
                   • <span className="text-slate-400">Compliance Off:</span> compliance@mine.gov.in
@@ -316,7 +293,6 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEmail('contractor@partner.com')}
-                  className="text-left hover:text-gov-gold transition-colors"
                   className="text-left hover:text-gov-gold transition-colors truncate"
                 >
                   • <span className="text-slate-400">Contractor:</span> contractor@partner.com
@@ -410,7 +386,6 @@ export const Login: React.FC = () => {
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Verifying Statutory Credentials...</span>
                     <span>Authenticating & Opening Portal...</span>
                   </>
                 ) : (
@@ -448,7 +423,6 @@ export const Login: React.FC = () => {
 
               {serverPingMsg && (
                 <div className={`mt-2 p-2 rounded text-[11px] font-mono ${
-                  serverStatus === 'ONLINE' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
                   serverStatus === 'ONLINE' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-800 border border-slate-200'
                 }`}>
                   {serverPingMsg}
