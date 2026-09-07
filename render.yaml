@@ -17,12 +17,12 @@ services:
       - key: JWT_EXPIRES_IN
         value: 7d
 
-  # Frontend Static Web App (Static sites are free by default and do not take plan property)
+  # Frontend Static Web App
   - type: web
     name: coal-compliance-frontend
     runtime: static
     rootDir: frontend
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npx vite build
     staticPublishPath: dist
     routes:
       - type: rewrite
