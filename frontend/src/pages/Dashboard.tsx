@@ -499,16 +499,138 @@ export const Dashboard: React.FC = () => {
                 <p className="text-[10px] opacity-80 mt-1 truncate">{item.desc}</p>
               </div>
             ))}
-          </div>
-        </div>
 
-      </div>
 
-      {/* Recharts Data Visualization Row 2: Category Compliance & Mine Comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Compliance by Statutory Category */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ded-xl shadow-sm border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900">Compliance by Statutory Category</h3>
