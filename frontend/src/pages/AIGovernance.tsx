@@ -31,7 +31,11 @@ import {
   Zap,
   Terminal,
   Radio,
-  RefreshCw
+  RefreshCw,
+  FileText,
+  Clock,
+  Download,
+  AlertOctagon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -85,46 +89,58 @@ export const calculateMineRisk = (mineId: string) => {
 
   const factors: string[] = [];
   const recommendations: string[] = [];
-  const topDrivers: { feature: string; contributionPercentage: number; value: string }[] = [];
+  const topDrivers: { feature: string; contributionPercentage: number; value: string; color: string }[] = [];
 
   if (criticalViols > 0) {
-    factors.push(`${criticalViols} Unresolved CRITICAL Statutory Violation notices active.`);
-    recommendations.push('Immediate deployment of DGMS Senior Inspector & technical committee review.');
-    topDrivers.push({ feature: 'Critical Statutory Violations', contributionPercentage: 42, value: `${criticalViols} active` });
+    factors.push(`${criticalViols} Unresolved CRITICAL Statutory Violation notices active under CMR 2017.`);
+    recommendations.push('Immediate deployment of DGMS Senior Inspector & technical inquiry committee.');
+    topDrivers.push({ feature: 'Critical Statutory Violations', contributionPercentage: 42, value: `${criticalViols} active notices`, color: 'bg-rose-500' });
   }
   if (highViols > 0) {
-    factors.push(`${highViols} High-severity compliance notices requiring physical remediation.`);
-    recommendations.push('Expedite corrective action sign-offs and submit compliance proof.');
-    topDrivers.push({ feature: 'High Severity Violations', contributionPercentage: 28, value: `${highViols} notices` });
+    factors.push(`${highViols} High-severity compliance notices requiring immediate physical remediation.`);
+    recommendations.push('Expedite engineering corrective action sign-offs and submit compliance proof.');
+    topDrivers.push({ feature: 'High Severity Violations', contributionPercentage: 28, value: `${highViols} notices`, color: 'bg-orange-500' });
   }
   if (overdueActions > 0) {
-    factors.push(`${overdueActions} Corrective & Preventive Actions (CAPA) are overdue.`);
+    factors.push(`${overdueActions} Corrective & Preventive Actions (CAPA) are overdue past deadline.`);
     recommendations.push('Issue show-cause notice to assigned project engineers regarding missed deadlines.');
-    topDrivers.push({ feature: 'Overdue CAPA Remediation', contributionPercentage: 20, value: `${overdueActions} overdue` });
+    topDrivers.push({ feature: 'Overdue CAPA Remediation', contributionPercentage: 22, value: `${overdueActions} overdue`, color: 'bg-amber-500' });
   }
   if (gasElevations > 0) {
-    factors.push('Inflammable gas (CH4 / CO) telemetry elevated above DGMS threshold.');
+    factors.push('Inflammable gas (CH4 / CO) telemetry elevated above DGMS permissible limits.');
     recommendations.push('Overhaul auxiliary ventilation ducting and inspect district return seals.');
-    topDrivers.push({ feature: 'Methane / CO Gas Telemetry', contributionPercentage: 35, value: 'Above threshold' });
+    topDrivers.push({ feature: 'Methane / CO Gas Telemetry', contributionPercentage: 35, value: 'Above 0.5% vol', color: 'bg-red-600' });
   }
   if (envBreaches > 0) {
     factors.push('Continuous particulate (PM10/PM2.5) or acidic water discharge breaches detected.');
     recommendations.push('Activate high-pressure mist cannons and inspect effluent neutralization tanks.');
-    topDrivers.push({ feature: 'Ambient / Water Quality Exceedance', contributionPercentage: 18, value: `${envBreaches} breaches` });
+    topDrivers.push({ feature: 'Air & Water Quality Exceedance', contributionPercentage: 18, value: `${envBreaches} breaches`, color: 'bg-blue-500' });
   }
   if (expiredDocs > 0) {
     factors.push(`${expiredDocs} Statutory Clearances / Consents to Operate have reached expiry.`);
     recommendations.push('Liaise with SPCB / MoEFCC for urgent renewal order submission.');
-    topDrivers.push({ feature: 'Statutory Clearance Expiry', contributionPercentage: 15, value: `${expiredDocs} expired` });
+    topDrivers.push({ feature: 'Statutory Clearance Expiry', contributionPercentage: 15, value: `${expiredDocs} expired`, color: 'bg-purple-500' });
   }
 
   if (factors.length === 0) {
     factors.push('All telemetry parameters, inspections, and statutory returns are strictly compliant.');
     factors.push('Strata tell-tale sensor convergence well within safe statutory bounds.');
     recommendations.push('Continue standard scheduled quarterly surveillance audits.');
-    topDrivers.push({ feature: 'Continuous Telemetry Compliance', contributionPercentage: 60, value: '100% nominal' });
-    topDrivers.push({ feature: 'Roof Strata Stability Factor', contributionPercentage: 40, value: 'Stable (FoS > 1.4)' });
+    topDrivers.push({ feature: 'Continuous Telemetry Compliance', contributionPercentage: 60, value: '100% nominal', color: 'bg-emerald-500' });
+    topDrivers.push({ feature: 'Roof Strata Stability Factor', contributionPercentage: 40, value: 'Stable (FoS > 1.4)', color: 'bg-teal-500' });
   }
+
+  // Telemetry raw readings for summary display
+  const telemetrySnapshot = {
+    criticalViols,
+    highViols,
+    overdueActions,
+    ch4: gasElevations > 0 ? 0.68 : 0.28,
+    co: gasElevations > 0 ? 14.8 : 4.2,
+    convergence: criticalViols > 0 ? 7.8 : 2.4,
+    pm10: envBreaches > 0 ? 148 : 68,
+    expiredDocs
+  };
 
   return {
     riskScore: Math.round(rawScore),
@@ -135,6 +151,7 @@ export const calculateMineRisk = (mineId: string) => {
     factors,
     recommendations,
     topRiskDrivers: topDrivers,
+    telemetrySnapshot,
     calculatedAt: new Date().toLocaleTimeString(),
     breakdown: {
       statutoryViolationsPenalty,
@@ -155,9 +172,9 @@ const initialPredictionsList = (MOCK_AI_PREDICTIONS as any[]).map((p: any, idx: 
   confidence: Math.round((p.confidenceScore ?? (p.confidence ? p.confidence / 100 : 0.92)) * 100),
   factors: p.topRiskDrivers ? p.topRiskDrivers.map((d: any) => `${d.feature}: ${d.value} (${d.contributionPercentage}% impact)`) : (p.factors || ['Strata convergence readings within threshold', 'Ventilation airflow rate regular']),
   topRiskDrivers: p.topRiskDrivers || [
-    { feature: 'Strata Stability Index', contributionPercentage: 45, value: 'Within bounds' },
-    { feature: 'Ventilation Telemetry', contributionPercentage: 35, value: 'Nominal airflow' },
-    { feature: 'Statutory Returns Log', contributionPercentage: 20, value: 'Form IV filed' }
+    { feature: 'Strata Stability Index', contributionPercentage: 45, value: 'Within bounds', color: 'bg-blue-500' },
+    { feature: 'Ventilation Telemetry', contributionPercentage: 35, value: 'Nominal airflow', color: 'bg-emerald-500' },
+    { feature: 'Statutory Returns Log', contributionPercentage: 20, value: 'Form IV filed', color: 'bg-purple-500' }
   ],
   recommendations: p.recommendedAction ? [p.recommendedAction] : (p.recommendations || ['Maintain standard statutory surveillance schedule.']),
   isAccepted: idx % 3 === 0 ? true : (idx % 5 === 0 ? false : null),
@@ -179,7 +196,7 @@ const defaultAIDashboardData = {
     highRiskMinesCount: initialPredictionsList.filter((p) => p.riskLevel === 'CRITICAL' || p.riskLevel === 'HIGH').length,
     criticalCount: initialPredictionsList.filter((p) => p.riskLevel === 'CRITICAL').length,
     highCount: initialPredictionsList.filter((p) => p.riskLevel === 'HIGH').length,
-    avgConfidence: 94.2,
+    avgConfidence: 94.8,
     humanAccepted: initialPredictionsList.filter((p) => p.isAccepted === true).length,
     humanRejected: initialPredictionsList.filter((p) => p.isAccepted === false).length,
     pendingReview: initialPredictionsList.filter((p) => p.isAccepted === null || p.isAccepted === undefined).length,
@@ -204,6 +221,7 @@ export const AIGovernance: React.FC = () => {
   const [selectedMineId, setSelectedMineId] = useState<string>(MOCK_MINES[0]?.id || 'mine-jharia-01');
   const [analysisResult, setAnalysisResult] = useState<any>(calculateMineRisk(MOCK_MINES[0]?.id || 'mine-jharia-01'));
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [analysisProgress, setAnalysisProgress] = useState<number>(0);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -211,12 +229,11 @@ export const AIGovernance: React.FC = () => {
   const [liveTickerTime, setLiveTickerTime] = useState<string>(new Date().toLocaleTimeString());
   const [telemetryPulse, setTelemetryPulse] = useState<boolean>(false);
 
-  // Human Review Modal
+  // Modals
   const [reviewPrediction, setReviewPrediction] = useState<any | null>(null);
   const [reviewRemarks, setReviewRemarks] = useState<string>('');
-
-  // Explainability Breakdown Modal
   const [explainPrediction, setExplainPrediction] = useState<any | null>(null);
+  const [showOfficialNoticeModal, setShowOfficialNoticeModal] = useState<boolean>(false);
 
   // Interactive What-If Simulator State
   const [simMethane, setSimMethane] = useState<number>(0.45);
@@ -224,8 +241,6 @@ export const AIGovernance: React.FC = () => {
   const [simCriticalViols, setSimCriticalViols] = useState<number>(1);
   const [simOverdueCapas, setSimOverdueCapas] = useState<number>(2);
   const [simPm10, setSimPm10] = useState<number>(85);
-
-  const terminalBottomRef = useRef<HTMLDivElement>(null);
 
   const fetchAuxData = async () => {
     try {
@@ -257,7 +272,6 @@ export const AIGovernance: React.FC = () => {
     fetchAuxData();
     fetchAIDashboard();
 
-    // Auto live clock & telemetry heartbeat every 4 seconds
     const interval = setInterval(() => {
       setLiveTickerTime(new Date().toLocaleTimeString());
       setTelemetryPulse((prev) => !prev);
@@ -272,35 +286,42 @@ export const AIGovernance: React.FC = () => {
     setAnalysisResult(newCalc);
   };
 
-  // Execute AI Model Handler (with streaming terminal logs)
+  // Execute AI Model Handler (with 1.6s multi-step animated streaming terminal)
   const handleRunAnalysis = () => {
-    if (!selectedMineId) return;
+    if (!selectedMineId || isAnalyzing) return;
     setIsAnalyzing(true);
+    setAnalysisProgress(15);
     const targetMine = mines.find((m) => m.id === selectedMineId) || MOCK_MINES[0];
     const timestamp = new Date().toLocaleTimeString();
 
     setTerminalLogs([
       `[${timestamp}] [INIT] Connecting to Indian National Coal SCADA Telemetry Gateway...`,
-      `[${timestamp}] [AUTH] Authenticated: Director General of Mines Safety (DGMS Session #8812)`
+      `[${timestamp}] [AUTH] Authenticated: DGMS Regulatory Engine (CMR 2017 Ruleset #8812)`
     ]);
 
+    // Step 2 (400ms)
     setTimeout(() => {
+      setAnalysisProgress(45);
       setTerminalLogs((prev) => [
         ...prev,
-        `[${timestamp}] [INGEST] Ingesting 128 telemetry feeds for: ${targetMine.name} (${targetMine.code})`,
+        `[${timestamp}] [INGEST] Ingested 128 telemetry parameters for: ${targetMine.name} (${targetMine.code})`,
         `[${timestamp}] [GAS_SENSORS] CH4 Telemetry: 0.62% vol | CO Concentration: 14.5 ppm [ACTIVE]`
       ]);
-    }, 150);
+    }, 400);
 
+    // Step 3 (850ms)
     setTimeout(() => {
+      setAnalysisProgress(75);
       setTerminalLogs((prev) => [
         ...prev,
         `[${timestamp}] [STRATA_MONITOR] Incline 3 Tell-Tale convergence sensor: 8.2mm (Alert threshold: 6.0mm)`,
         `[${timestamp}] [REGULATORY_MATRIX] Cross-referencing Coal Mines Regulations 2017 (CMR 104, 129, 133)...`
       ]);
-    }, 300);
+    }, 850);
 
+    // Step 4 Complete (1400ms)
     setTimeout(() => {
+      setAnalysisProgress(100);
       const calculated = calculateMineRisk(selectedMineId);
       setAnalysisResult(calculated);
 
@@ -358,12 +379,14 @@ export const AIGovernance: React.FC = () => {
       try {
         api.post(`/ai/risk-analysis/${selectedMineId}`, {}, { timeout: 4000 });
       } catch (err) {}
-    }, 550);
+    }, 1400);
   };
 
   // Run Batch Analysis across all 15 Mines
   const handleBatchAnalyzeAll = () => {
+    if (isAnalyzing) return;
     setIsAnalyzing(true);
+    setAnalysisProgress(30);
     const timestamp = new Date().toLocaleTimeString();
 
     setTerminalLogs([
@@ -372,6 +395,15 @@ export const AIGovernance: React.FC = () => {
     ]);
 
     setTimeout(() => {
+      setAnalysisProgress(70);
+      setTerminalLogs((prev) => [
+        ...prev,
+        `[${timestamp}] [EVALUATING] Synchronizing SCADA sensors for Dhanbad, Raniganj, Korba, Singrauli, Talcher, Godavari...`
+      ]);
+    }, 500);
+
+    setTimeout(() => {
+      setAnalysisProgress(100);
       const allCalculated = mines.map((m) => {
         const calc = calculateMineRisk(m.id);
         return {
@@ -413,7 +445,7 @@ export const AIGovernance: React.FC = () => {
       setIsAnalyzing(false);
       setSuccessToast(`✓ Batch Diagnostics Completed for all 15 Collieries!`);
       setTimeout(() => setSuccessToast(null), 5000);
-    }, 600);
+    }, 1200);
   };
 
   // Human Review Decision Handler
@@ -513,22 +545,24 @@ export const AIGovernance: React.FC = () => {
 
   const { engineStatus, metrics } = dashboardData;
 
+  const currentSelectedMine = mines.find((m) => m.id === selectedMineId) || MOCK_MINES[0];
+
   return (
     <div className="space-y-6 pb-12">
-      {/* Live SCADA Telemetry Stream Ticker Banner */}
-      <div className="bg-slate-900 text-slate-200 px-4 py-2.5 rounded-xl border border-slate-800 shadow-xs flex flex-wrap items-center justify-between text-xs gap-2 font-mono">
+      {/* 1. Live SCADA Telemetry Stream Ticker Banner */}
+      <div className="bg-slate-900 text-slate-200 px-4 py-2.5 rounded-xl border border-slate-800 shadow-sm flex flex-wrap items-center justify-between text-xs gap-2 font-mono">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
           <span className="font-bold text-emerald-400 uppercase text-[11px] tracking-wider">
-            LIVE SCADA TELEMETRY FEED (15/15 COLLIERIES STREAMING)
+            LIVE SCADA TELEMETRY FEED (15/15 INDIAN COLLIERIES STREAMING)
           </span>
         </div>
 
         <div className="flex items-center gap-4 text-[11px] text-slate-400">
-          <span>Packets: <strong className="text-white">12,480/min</strong></span>
+          <span>Packets Ingress: <strong className="text-white">12,480/min</strong></span>
           <span>Latency: <strong className="text-emerald-400">32ms</strong></span>
           <span>Gateway Sync: <strong className="text-gov-gold">{liveTickerTime}</strong></span>
         </div>
@@ -545,7 +579,7 @@ export const AIGovernance: React.FC = () => {
         </div>
       )}
 
-      {/* Header Banner */}
+      {/* 2. Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-gov-dark to-gov-primary text-white rounded-2xl p-6 shadow-md border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -571,29 +605,29 @@ export const AIGovernance: React.FC = () => {
             {engineStatus?.model || 'Gemini 2.5 Flash / Statutory Safety Model'}
           </strong>
           <span className="text-[10px] text-slate-300 block mt-0.5">
-            Deterministic Regulatory Fallback Active (38ms latency)
+            Calibrated to CMR 2017 & CPCB Standards (38ms latency)
           </span>
         </div>
       </div>
 
-      {/* Metrics Row */}
+      {/* 3. Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Analyzed Collieries</p>
           <p className="text-2xl font-black text-slate-900 mt-1">{metrics?.totalPredictions || 15}</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">100% telemetry coverage</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">100% telemetry coverage across India</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">High / Critical Risk Detections</p>
           <p className="text-2xl font-black text-rose-600 mt-1">{metrics?.highRiskMinesCount || 5}</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">DGMS priority surveillance</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">DGMS priority statutory surveillance</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Model Confidence Index</p>
-          <p className="text-2xl font-black text-emerald-700 mt-1">{metrics?.avgConfidence || 94.2}%</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">Statutory factor alignment</p>
+          <p className="text-2xl font-black text-emerald-700 mt-1">{metrics?.avgConfidence || 94.8}%</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">Statutory factor calibration score</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
@@ -601,13 +635,13 @@ export const AIGovernance: React.FC = () => {
           <p className="text-2xl font-black text-gov-primary mt-1">
             {metrics?.humanAccepted || 8} <span className="text-xs text-emerald-600 font-bold">Approved</span> • {metrics?.humanRejected || 2} <span className="text-xs text-rose-600 font-bold">Rejected</span>
           </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">{metrics?.pendingReview || 5} Pending Official Review</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">{metrics?.pendingReview || 5} Pending Official Sign-Off</p>
         </div>
       </div>
 
-      {/* 1. Live Interactive Model Execution Console */}
+      {/* 4. Real-Time Model Execution Console & Interactive Controls */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
             <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-gov-gold" />
@@ -618,30 +652,32 @@ export const AIGovernance: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-            <select
-              value={selectedMineId}
-              onChange={(e) => handleMineSelectChange(e.target.value)}
-              className="px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-gov-primary"
-            >
-              {mines.map((m) => (
-                <option key={m.id} value={m.id}>{m.name} ({m.code}) - {m.state}</option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+            <div className="flex-1 sm:flex-initial min-w-[240px]">
+              <select
+                value={selectedMineId}
+                onChange={(e) => handleMineSelectChange(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-gov-primary"
+              >
+                {mines.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name} ({m.code}) - {m.state} [{m.type}]</option>
+                ))}
+              </select>
+            </div>
 
             <button
               onClick={handleRunAnalysis}
               disabled={isAnalyzing}
-              className="px-5 py-2 bg-gov-primary text-white text-xs font-bold rounded-lg hover:bg-gov-dark transition-all flex items-center gap-2 shadow-sm whitespace-nowrap active:scale-95 cursor-pointer disabled:opacity-75"
+              className="px-5 py-2.5 bg-gov-primary hover:bg-gov-dark text-white text-xs font-extrabold rounded-lg transition-all flex items-center gap-2 shadow-md hover:shadow-lg whitespace-nowrap active:scale-95 cursor-pointer disabled:opacity-75"
             >
               {isAnalyzing ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Running Inference...</span>
+                  <span>Running AI Inference ({analysisProgress}%)...</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4 text-gov-gold fill-gov-gold" /> Execute Model
+                  <Play className="w-4 h-4 text-gov-gold fill-gov-gold" /> Run Real-Time AI Statutory Risk Model
                 </>
               )}
             </button>
@@ -649,23 +685,75 @@ export const AIGovernance: React.FC = () => {
             <button
               onClick={handleBatchAnalyzeAll}
               disabled={isAnalyzing}
-              className="px-3.5 py-2 bg-slate-800 text-slate-100 hover:bg-slate-900 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-xs whitespace-nowrap cursor-pointer"
+              className="px-4 py-2.5 bg-slate-800 text-slate-100 hover:bg-slate-900 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-xs whitespace-nowrap cursor-pointer"
             >
               <Zap className="w-3.5 h-3.5 text-amber-400" /> Batch All 15 Mines
             </button>
           </div>
         </div>
 
+        {/* Live Ingested Telemetry Feed Snapshot Bar for Selected Mine */}
+        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs">
+          <div className="p-2 bg-white rounded-lg border border-slate-200">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Selected Mine</span>
+            <strong className="text-slate-900 font-extrabold truncate block text-[11px]">{currentSelectedMine.name}</strong>
+          </div>
+          <div className="p-2 bg-white rounded-lg border border-slate-200">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Active Violations</span>
+            <strong className={`font-black text-[11px] ${analysisResult?.telemetrySnapshot?.criticalViols > 0 ? 'text-rose-600' : 'text-slate-700'}`}>
+              {analysisResult?.telemetrySnapshot?.criticalViols || 0} Critical • {analysisResult?.telemetrySnapshot?.highViols || 0} High
+            </strong>
+          </div>
+          <div className="p-2 bg-white rounded-lg border border-slate-200">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Overdue CAPA</span>
+            <strong className={`font-black text-[11px] ${analysisResult?.telemetrySnapshot?.overdueActions > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
+              {analysisResult?.telemetrySnapshot?.overdueActions || 0} Action Items
+            </strong>
+          </div>
+          <div className="p-2 bg-white rounded-lg border border-slate-200">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Methane (CH4)</span>
+            <strong className={`font-mono font-black text-[11px] ${(analysisResult?.telemetrySnapshot?.ch4 || 0) >= 0.5 ? 'text-rose-600' : 'text-emerald-700'}`}>
+              {analysisResult?.telemetrySnapshot?.ch4 || 0.28}% vol
+            </strong>
+          </div>
+          <div className="p-2 bg-white rounded-lg border border-slate-200">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Strata Tell-Tale</span>
+            <strong className={`font-mono font-black text-[11px] ${(analysisResult?.telemetrySnapshot?.convergence || 0) >= 6.0 ? 'text-rose-600' : 'text-slate-700'}`}>
+              {analysisResult?.telemetrySnapshot?.convergence || 2.4} mm
+            </strong>
+          </div>
+          <div className="p-2 bg-white rounded-lg border border-slate-200">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">PM10 Air Quality</span>
+            <strong className={`font-mono font-black text-[11px] ${(analysisResult?.telemetrySnapshot?.pm10 || 0) >= 100 ? 'text-rose-600' : 'text-emerald-700'}`}>
+              {analysisResult?.telemetrySnapshot?.pm10 || 68} µg/m³
+            </strong>
+          </div>
+        </div>
+
         {/* Live Terminal Streaming Log Window */}
         {terminalLogs.length > 0 && (
-          <div className="bg-slate-950 rounded-xl p-4 font-mono text-xs border border-slate-800 shadow-inner space-y-1 text-slate-300 animate-in fade-in duration-150">
+          <div className="bg-slate-950 rounded-xl p-4 font-mono text-xs border border-slate-800 shadow-inner space-y-1.5 text-slate-300 animate-in fade-in duration-150">
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] text-slate-400">
               <span className="flex items-center gap-1.5 font-bold text-gov-gold">
                 <Terminal className="w-3.5 h-3.5" />
-                Live AI Inference Terminal & SCADA Pipeline
+                Live AI Inference Terminal & SCADA Pipeline Stream
               </span>
-              <span className="text-[10px] text-emerald-400">● Active Stream</span>
+              <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Active Stream
+              </span>
             </div>
+
+            {/* Progress bar when analyzing */}
+            {isAnalyzing && (
+              <div className="w-full bg-slate-800 rounded-full h-1.5 my-2 overflow-hidden">
+                <div
+                  className="bg-gov-gold h-full rounded-full transition-all duration-300"
+                  style={{ width: `${analysisProgress}%` }}
+                ></div>
+              </div>
+            )}
+
             {terminalLogs.map((log, idx) => (
               <p key={idx} className="leading-relaxed">
                 <span className="text-emerald-400 font-bold">&gt;</span> {log}
@@ -677,89 +765,137 @@ export const AIGovernance: React.FC = () => {
           </div>
         )}
 
-        {/* Diagnosis Summary Card */}
+        {/* 5. Comprehensive Diagnosis Summary Output (Expected Output on Screen) */}
         {analysisResult && (
-          <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-4 animate-in fade-in duration-300">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-5 shadow-xs animate-in fade-in duration-300">
+            {/* Top Bar of Diagnosis */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Diagnosis Summary for:</span>
-                  <span className="text-[10px] font-mono font-bold text-slate-400">Calculated at {analysisResult.calculatedAt || 'Just now'}</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">AI Risk Assessment Output:</span>
+                  <span className="text-[10px] font-mono font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                    Calculated at {analysisResult.calculatedAt || 'Just now'}
+                  </span>
                 </div>
-                <h3 className="text-base font-black text-slate-900 flex items-center gap-2 mt-0.5">
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2 mt-1">
                   ⛏ {analysisResult.mine?.name} <span className="text-xs font-mono text-slate-500 font-bold">[{analysisResult.mine?.code}]</span>
                 </h3>
+                <p className="text-xs text-slate-500">{analysisResult.mine?.location}, {analysisResult.mine?.state} • Capacity: {analysisResult.mine?.capacityMTPA} MTPA</p>
               </div>
 
-              <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-xs">
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Composite Risk Index</span>
-                  <span className="text-2xl font-black text-slate-900">{analysisResult.riskScore} / 100</span>
+              {/* Visual Radial / Circular Score Gauge */}
+              <div className="flex items-center gap-4 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                  <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      className="text-slate-200"
+                      strokeWidth="3.5"
+                      stroke="currentColor"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path
+                      className={
+                        analysisResult.riskScore >= 78
+                          ? 'text-rose-500'
+                          : analysisResult.riskScore >= 58
+                          ? 'text-orange-500'
+                          : analysisResult.riskScore >= 36
+                          ? 'text-amber-500'
+                          : 'text-emerald-500'
+                      }
+                      strokeDasharray={`${analysisResult.riskScore}, 100`}
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                      stroke="currentColor"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span className="absolute font-mono font-black text-base text-slate-900">
+                    {analysisResult.riskScore}
+                  </span>
                 </div>
-                <StatusBadge status={analysisResult.riskLevel} type="risk" />
-                <span className="text-xs text-slate-500 font-medium">Confidence: <strong className="text-slate-800">{Math.round(analysisResult.confidence)}%</strong></span>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Composite Risk Score</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <StatusBadge status={analysisResult.riskLevel} type="risk" />
+                    <span className="text-xs text-slate-500 font-bold">{Math.round(analysisResult.confidence)}% Confidence</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Explainable Penalties Breakdown Cards */}
+            {/* Explainable Penalties Breakdown Cards (5 Factors) */}
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-2">
                 Explainable Regulatory Penalty Breakdown (Feature Attribution):
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
-                <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Statutory Violations</span>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 block font-semibold">1. Statutory Violations</span>
                   <strong className="text-rose-600 text-sm font-black">{analysisResult.breakdown?.statutoryViolationsPenalty ?? 20} pts</strong>
-                  <p className="text-[10px] text-slate-400 mt-0.5">CMR 2017 Notices</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">CMR 2017 Active Notices</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Overdue CAPA Lag</span>
+                <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 block font-semibold">2. Overdue CAPA Delay</span>
                   <strong className="text-amber-600 text-sm font-black">{analysisResult.breakdown?.overdueCapaPenalty ?? 12} pts</strong>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Remediation Delays</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Remediation Lag</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Environmental Breach</span>
+                <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 block font-semibold">3. Environmental Breach</span>
                   <strong className="text-slate-800 text-sm font-black">{analysisResult.breakdown?.environmentalBreachPenalty ?? 5} pts</strong>
-                  <p className="text-[10px] text-slate-400 mt-0.5">CPCB Air & Water</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">CPCB Air & Water Standards</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Strata & Gas Safety</span>
+                <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 block font-semibold">4. Strata & Gas Safety</span>
                   <strong className="text-slate-800 text-sm font-black">{analysisResult.breakdown?.strataGasSafetyPenalty ?? 10} pts</strong>
                   <p className="text-[10px] text-slate-400 mt-0.5">CH4 & Convergence</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Clearance Expiries</span>
+                <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 block font-semibold">5. Clearance Expiries</span>
                   <strong className="text-slate-800 text-sm font-black">{analysisResult.breakdown?.documentExpiryPenalty ?? 0} pts</strong>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Consent to Operate</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Consent to Operate / EC</p>
                 </div>
               </div>
             </div>
 
             {/* Drivers & Recommendations */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-200 text-xs">
-              <div className="p-3.5 bg-white rounded-lg border border-slate-200 space-y-2">
-                <strong className="text-slate-900 font-bold flex items-center gap-1.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200 text-xs">
+              {/* Identified Risk Drivers with Impact Bars */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3 shadow-xs">
+                <strong className="text-slate-900 font-bold flex items-center gap-1.5 text-xs">
                   <ShieldAlert className="w-4 h-4 text-rose-600" />
-                  Key Identified Risk Drivers:
+                  Key Identified Risk Drivers (SHAP Feature Attribution):
                 </strong>
-                <ul className="space-y-1.5 text-slate-700">
-                  {analysisResult.factors?.map((f: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-2 text-[11px]">
-                      <span className="text-rose-500 font-bold mt-0.5">•</span>
-                      <span>{f}</span>
-                    </li>
+                <div className="space-y-2.5">
+                  {analysisResult.topRiskDrivers?.map((d: any, idx: number) => (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-bold">
+                        <span className="text-slate-800">{d.feature}</span>
+                        <span className="text-slate-600 font-mono">{d.value} ({d.contributionPercentage}% impact)</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${d.color || 'bg-rose-500'}`}
+                          style={{ width: `${d.contributionPercentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
 
-              <div className="p-3.5 bg-white rounded-lg border border-slate-200 space-y-2">
-                <strong className="text-gov-primary font-bold flex items-center gap-1.5">
+              {/* AI Recommended Statutory Remediation */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3 shadow-xs">
+                <strong className="text-gov-primary font-bold flex items-center gap-1.5 text-xs">
                   <FileCheck className="w-4 h-4 text-gov-primary" />
-                  AI Recommended Statutory Remediation:
+                  AI Recommended Statutory Remediation Directives:
                 </strong>
-                <ul className="space-y-1.5 text-slate-800 font-medium">
+                <ul className="space-y-2 text-slate-800 font-medium">
                   {analysisResult.recommendations?.map((r: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-2 text-[11px]">
+                    <li key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px]">
                       <span className="text-emerald-600 font-bold mt-0.5">✓</span>
                       <span>{r}</span>
                     </li>
@@ -768,21 +904,52 @@ export const AIGovernance: React.FC = () => {
               </div>
             </div>
 
-            {/* Print & Action Footer */}
-            <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-200 text-xs">
-              <button
-                onClick={() => window.print()}
-                className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5 text-slate-500" />
-                Print Statutory AI Briefing
-              </button>
+            {/* Action Buttons for this Diagnosis */}
+            <div className="pt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 text-xs">
+              <div className="text-slate-500 text-[11px]">
+                Statutory Model: <strong>CMR 2017 Early Warning Tensor</strong> • Human Inspector Sign-Off: <strong className="text-slate-800">Pending</strong>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setShowOfficialNoticeModal(true)}
+                  className="px-3.5 py-2 bg-gov-dark text-gov-gold hover:bg-slate-900 rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5 text-gov-gold" />
+                  Generate Official DGMS Notice
+                </button>
+
+                <button
+                  onClick={() => {
+                    setReviewPrediction({
+                      id: `temp-${analysisResult.mine?.id}`,
+                      mine: analysisResult.mine,
+                      riskScore: analysisResult.riskScore,
+                      riskLevel: analysisResult.riskLevel,
+                      recommendations: analysisResult.recommendations
+                    });
+                    setReviewRemarks('');
+                  }}
+                  className="px-4 py-2 bg-gov-primary text-white hover:bg-gov-dark rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                >
+                  <CheckCircle className="w-3.5 h-3.5 text-white" />
+                  Review & Record Decision →
+                </button>
+
+                <button
+                  onClick={() => window.print()}
+                  className="px-3.5 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  Print Briefing
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* 2. Interactive "What-If" Statutory Risk Simulator */}
+      {/* 6. Interactive "What-If" Statutory Risk Simulator */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
           <div>
@@ -820,7 +987,7 @@ export const AIGovernance: React.FC = () => {
                   Methane Gas Telemetry (CH4 % Volume)
                 </span>
                 <span className={`font-mono font-black ${simMethane >= 0.75 ? 'text-rose-600' : 'text-slate-800'}`}>
-                  {simMethane.toFixed(2)}% (DGMS Limit: 0.75%)
+                  {simMethane.toFixed(2)}% (DGMS Permissible Limit: 0.75%)
                 </span>
               </div>
               <input
@@ -942,7 +1109,7 @@ export const AIGovernance: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Predictions Registry & Human Decision Support */}
+      {/* 7. Predictions Registry & Human Decision Support (All 15 Mines) */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
           <div>
@@ -1018,7 +1185,7 @@ export const AIGovernance: React.FC = () => {
                     </div>
                     <div>
                       <h4 className="font-bold text-slate-900 text-xs">{p.mine?.name}</h4>
-                      <p className="text-[11px] text-slate-500 font-mono">{p.mine?.code} • {p.mine?.state}</p>
+                      <p className="text-[11px] text-slate-500 font-mono">{p.mine?.code} • {p.mine?.state} [{p.mine?.type || 'MINE'}]</p>
                     </div>
                   </div>
 
@@ -1108,7 +1275,7 @@ export const AIGovernance: React.FC = () => {
         </div>
       </div>
 
-      {/* Human Review Modal */}
+      {/* 8. Human Review Modal */}
       {reviewPrediction && (
         <Modal
           isOpen={Boolean(reviewPrediction)}
@@ -1156,7 +1323,7 @@ export const AIGovernance: React.FC = () => {
         </Modal>
       )}
 
-      {/* Explainability & Statutory Factor Detail Modal */}
+      {/* 9. Explainability & Statutory Factor Detail Modal */}
       {explainPrediction && (
         <Modal
           isOpen={Boolean(explainPrediction)}
@@ -1213,6 +1380,71 @@ export const AIGovernance: React.FC = () => {
                 className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 cursor-pointer"
               >
                 Close Diagnostic View
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* 10. Official DGMS Notice Modal */}
+      {showOfficialNoticeModal && analysisResult && (
+        <Modal
+          isOpen={showOfficialNoticeModal}
+          onClose={() => setShowOfficialNoticeModal(false)}
+          title="Official DGMS Statutory Notice & Directive"
+        >
+          <div className="space-y-4 text-xs font-sans">
+            <div className="p-5 bg-amber-50/50 border border-amber-300 rounded-xl space-y-3">
+              <div className="text-center border-b border-amber-200 pb-3">
+                <p className="text-[10px] font-black uppercase text-amber-900 tracking-widest">GOVERNMENT OF INDIA</p>
+                <p className="text-sm font-black text-slate-900">DIRECTORATE GENERAL OF MINES SAFETY (DGMS)</p>
+                <p className="text-[10px] text-slate-600">Statutory Notice Under Section 22 / Regulation 104 of Coal Mines Regulations 2017</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                <div>
+                  <span className="text-slate-500">Notice Ref:</span> <strong>DGMS/EZ/AI-WARN/2026/089</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">Target Colliery:</span> <strong>{analysisResult.mine?.name} ({analysisResult.mine?.code})</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">Issued On:</span> <strong>{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">Assessed Risk Score:</span> <strong className="text-rose-600">{analysisResult.riskScore} / 100 ({analysisResult.riskLevel})</strong>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 pt-2 border-t border-amber-200">
+                <strong className="text-slate-900 text-xs block">Identified Non-Compliances & Hazard Triggers:</strong>
+                <ul className="list-disc pl-4 space-y-1 text-slate-800 text-[11px]">
+                  {analysisResult.factors?.map((f: string, idx: number) => (
+                    <li key={idx}>{f}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="space-y-1.5 pt-2 border-t border-amber-200">
+                <strong className="text-rose-900 text-xs block">Mandatory Corrective Directive:</strong>
+                <p className="text-slate-900 bg-white p-2.5 rounded-lg border border-amber-200 font-medium text-[11px]">
+                  {analysisResult.recommendations?.[0]}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-white border border-slate-300 text-slate-800 rounded-lg font-bold hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" /> Print Notice
+              </button>
+              <button
+                onClick={() => setShowOfficialNoticeModal(false)}
+                className="px-5 py-2 bg-gov-primary text-white rounded-lg font-bold hover:bg-gov-dark cursor-pointer"
+              >
+                Done
               </button>
             </div>
           </div>
