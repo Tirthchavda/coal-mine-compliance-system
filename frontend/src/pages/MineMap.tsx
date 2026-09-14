@@ -16,6 +16,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 
+import { MOCK_MINES } from '../data/mockData';
+
 // Custom colored SVG pin markers
 const createCustomIcon = (riskLevel: string) => {
   const color = riskLevel === 'CRITICAL' ? '#e11d48' : riskLevel === 'HIGH' ? '#f97316' : riskLevel === 'MEDIUM' ? '#eab308' : '#10b981';
@@ -28,8 +30,6 @@ const createCustomIcon = (riskLevel: string) => {
     popupAnchor: [0, -32]
   });
 };
-
-import { MOCK_MINES } from '../data/mockData';
 
 export const MineMap: React.FC = () => {
   const navigate = useNavigate();
