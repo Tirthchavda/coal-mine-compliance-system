@@ -81,23 +81,31 @@ export const Safety: React.FC = () => {
     fetchSafety();
   }, []);
 
-  // Instantaneous 0ms client-side filter computation
+  // Instantaneous 0ms client-side filtering computation
   const filteredRecords = useMemo(() => {
     return records.filter((s: any) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchDesc = s.description?.toLowerCase().includes(q);
-        const matchLoc = s.locationInMine?.toLowerCase().includes(q);
-        const matchType = s.incidentType?.toLowerCase().includes(q);
-        const matchMine = s.mine?.name?.toLowerCase().includes(q);
-        const matchCode = s.mine?.code?.toLowerCase().includes(q);
-        if (!matchDesc && !matchLoc && !matchType && !matchMine && !matchCode) {
-          return false;
-        }
+      const ch4 = s.gasLevelCH4 ?? s.methanePercentage ?? 0;
+      const co = s.gasLevelCO ?? s.carbonMonoxidePPM ?? 0;
+      const incType = (s.incidentType || s.shift || 'TELEMETRY_LOG').toUpperCase().trim();
+      const itemSev = (s.severity || (ch4 >= 0.75 ? 'CRITICAL' : ch4 >= 0.5 ? 'HIGH' : ch4 >= 0.2 ? 'MEDIUM' : 'LOW')).toUpperCase().trim();
+
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const haystack = `${s.id || ''} ${s.description || ''} ${s.remarks || ''} ${s.locationInMine || ''} ${incType} ${s.mine?.name || ''} ${s.mine?.code || ''} ${ch4} ${co} ${itemSev}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (mineId && s.mineId !== mineId && s.mine?.id !== mineId) return false;
-      if (typeFilter && s.incidentType !== typeFilter) return false;
-      if (severityFilter && s.severity !== severityFilter) return false;
+      if (mineId && mineId.trim()) {
+        if (s.mineId !== mineId && s.mine?.id !== mineId) return false;
+      }
+      if (typeFilter && typeFilter.trim()) {
+        const selectedType = typeFilter.toUpperCase().trim();
+        if (incType !== selectedType && !incType.includes(selectedType) && !selectedType.includes(incType)) return false;
+      }
+      if (severityFilter && severityFilter.trim()) {
+        const selectedSev = severityFilter.toUpperCase().trim();
+        if (itemSev !== selectedSev) return false;
+      }
       return true;
     });
   }, [records, search, mineId, typeFilter, severityFilter]);
@@ -246,12 +254,46 @@ export const Safety: React.FC = () => {
         </div>
       )}
 
+      {/* Quick Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            !search && !mineId && !typeFilter && !severityFilter
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Records ({records.length})
+        </button>
+        <button
+          onClick={() => setSeverityFilter(severityFilter === 'CRITICAL' ? '' : 'CRITICAL')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            severityFilter === 'CRITICAL'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+          }`}
+        >
+          <span>🔥</span> Critical Gas Levels
+        </button>
+        <button
+          onClick={() => setTypeFilter(typeFilter === 'SHIFT_1' ? '' : 'SHIFT_1')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            typeFilter === 'SHIFT_1'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Shift 1 Telemetry
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[200px]">
           <input
             type="text"
-            placeholder="Search telemetry, location, gas levels, colliery..."
+            placeholder="Search telemetry, location, gas levels, colliery, shift..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none"
@@ -274,10 +316,10 @@ export const Safety: React.FC = () => {
           onChange={(e) => setTypeFilter(e.target.value)}
           className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
         >
-          <option value="">All Record Types</option>
-          <option value="TELEMETRY_LOG">Telemetry Log</option>
-          <option value="NEAR_MISS">Near Miss</option>
-          <option value="MINOR_INCIDENT">Minor Incident</option>
+          <option value="">All Record Types / Shifts</option>
+          <option value="SHIFT_1">Shift 1 Active Log</option>
+          <option value="TELEMETRY_LOG">Continuous Telemetry</option>
+          <option value="NEAR_MISS">Near Miss Report</option>
           <option value="STATUTORY_SURVEILLANCE">Statutory Surveillance</option>
         </select>
 
@@ -287,16 +329,16 @@ export const Safety: React.FC = () => {
           className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
         >
           <option value="">All Severities</option>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="CRITICAL">Critical</option>
+          <option value="LOW">Low Risk</option>
+          <option value="MEDIUM">Medium Risk</option>
+          <option value="HIGH">High Risk</option>
+          <option value="CRITICAL">Critical Hazard</option>
         </select>
 
         {(search || mineId || typeFilter || severityFilter) && (
           <button
             onClick={handleResetFilters}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset ({filteredRecords.length})

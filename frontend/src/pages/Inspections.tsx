@@ -35,6 +35,7 @@ export const Inspections: React.FC = () => {
 
   const [search, setSearch] = useState<string>('');
   const [mineId, setMineId] = useState<string>(initialMineId);
+  const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
 
   // Schedule Modal
@@ -42,6 +43,7 @@ export const Inspections: React.FC = () => {
   const [scheduleData, setScheduleData] = useState({
     mineId: initialMineId,
     inspectionType: 'ROUTINE_STATUTORY',
+    inspectionType: 'ROUTINE_SAFETY',
     scheduledDate: new Date().toISOString().split('T')[0],
     summary: 'Quarterly statutory surveillance of colliery workings and safety mechanisms.'
   });
@@ -85,23 +87,39 @@ export const Inspections: React.FC = () => {
 
   // Instantaneous 0ms client-side filtering computation
   const filteredInspections = useMemo(() => {
-    return inspections.filter((i) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchMine = i.mine?.name?.toLowerCase().includes(q);
-        const matchCode = i.mine?.code?.toLowerCase().includes(q);
-        const matchInspector = (typeof i.leadInspector === 'string' ? i.leadInspector : i.leadInspector?.name || '').toLowerCase().includes(q);
-        const matchSummary = i.summary?.toLowerCase().includes(q);
-        const matchType = i.inspectionType?.toLowerCase().includes(q);
-        if (!matchMine && !matchCode && !matchInspector && !matchSummary && !matchType) {
-          return false;
-        }
+    return inspections.filter((i: any) => {
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const inspectorName = typeof i.inspector === 'string' ? i.inspector : i.inspector?.name || i.leadInspector?.name || i.leadInspector || '';
+        const summaryText = i.summary || i.findingsSummary || '';
+        const findingsText = Array.isArray(i.findings) ? i.findings.map((f: any) => `${f.category || ''} ${f.description || ''}`).join(' ') : '';
+        const haystack = `${i.id || ''} ${i.inspectionType || ''} ${i.mine?.name || ''} ${i.mine?.code || ''} ${inspectorName} ${summaryText} ${findingsText} ${i.status || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (mineId && i.mineId !== mineId && i.mine?.id !== mineId) return false;
-      if (statusFilter && i.status !== statusFilter) return false;
+      if (mineId && mineId.trim()) {
+        if (i.mineId !== mineId && i.mine?.id !== mineId) return false;
+      }
+      if (typeFilter && typeFilter.trim()) {
+        const selectedType = typeFilter.toUpperCase().trim();
+        const itemType = (i.inspectionType || '').toUpperCase().trim();
+        if (itemType !== selectedType && !itemType.includes(selectedType) && !selectedType.includes(itemType)) return false;
+      }
+      if (statusFilter && statusFilter.trim()) {
+        const selectedStatus = statusFilter.toUpperCase().trim();
+        const itemStatus = (i.status || '').toUpperCase().trim();
+        if (itemStatus !== selectedStatus && !itemStatus.includes(selectedStatus) && !selectedStatus.includes(itemStatus)) return false;
+      }
       return true;
     });
-  }, [inspections, search, mineId, statusFilter]);
+  }, [inspections, search, mineId, typeFilter, statusFilter]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setMineId('');
+    setTypeFilter('');
+    setStatusFilter('');
+  };
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,12 +266,66 @@ export const Inspections: React.FC = () => {
         )}
       </div>
 
+      {/* Quick Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            !search && !mineId && !typeFilter && !statusFilter
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Audits ({inspections.length})
+        </button>
+        <button
+          onClick={() => setStatusFilter(statusFilter === 'COMPLETED' ? '' : 'COMPLETED')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            statusFilter === 'COMPLETED'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+          }`}
+        >
+          <span>🟢</span> Completed ({inspections.filter(i => i.status === 'COMPLETED').length})
+        </button>
+        <button
+          onClick={() => setStatusFilter(statusFilter === 'SCHEDULED' ? '' : 'SCHEDULED')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            statusFilter === 'SCHEDULED'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+          }`}
+        >
+          <span>🟡</span> Scheduled ({inspections.filter(i => i.status === 'SCHEDULED').length})
+        </button>
+        <button
+          onClick={() => setTypeFilter(typeFilter === 'ROUTINE_SAFETY' ? '' : 'ROUTINE_SAFETY')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            typeFilter === 'ROUTINE_SAFETY'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Routine Safety
+        </button>
+        <button
+          onClick={() => setTypeFilter(typeFilter === 'VENTILATION' ? '' : 'VENTILATION')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            typeFilter === 'VENTILATION'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Ventilation & Gas
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[200px]">
           <input
             type="text"
-            placeholder="Search inspector, summary, colliery..."
+            placeholder="Search inspector, colliery, summary, findings, ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none"
@@ -272,6 +344,21 @@ export const Inspections: React.FC = () => {
         </select>
 
         <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
+        >
+          <option value="">All Audit Types</option>
+          <option value="ROUTINE_SAFETY">Routine Safety Audit</option>
+          <option value="SURPRISE_AUDIT">Surprise DGMS Inspection</option>
+          <option value="VENTILATION">Ventilation Survey</option>
+          <option value="HEMM_MACHINERY">HEMM Heavy Machinery</option>
+          <option value="STRATA_CONTROL">Strata Control & Support</option>
+          <option value="ELECTRICAL_SAFETY">Electrical Safety</option>
+          <option value="ENVIRONMENTAL_AUDIT">Environmental Audit</option>
+        </select>
+
+        <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
@@ -282,10 +369,10 @@ export const Inspections: React.FC = () => {
           <option value="COMPLETED">Completed</option>
         </select>
 
-        {(search || mineId || statusFilter) && (
+        {(search || mineId || typeFilter || statusFilter) && (
           <button
-            onClick={() => { setSearch(''); setMineId(''); setStatusFilter(''); }}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            onClick={handleResetFilters}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset ({filteredInspections.length})
@@ -299,6 +386,7 @@ export const Inspections: React.FC = () => {
           Showing <strong className="text-slate-800">{filteredInspections.length}</strong> of <strong className="text-slate-800">{inspections.length}</strong> statutory inspections
         </span>
         {(search || mineId || statusFilter) && (
+        {(search || mineId || typeFilter || statusFilter) && (
           <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
             Filtered View Active
           </span>

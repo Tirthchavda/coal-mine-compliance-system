@@ -68,22 +68,29 @@ export const Documents: React.FC = () => {
     fetchDocuments();
   }, []);
 
-  // Instantaneous 0ms client-side filter computation
+  // Instantaneous 0ms client-side filtering computation
   const filteredDocuments = useMemo(() => {
-    return documents.filter((d) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchTitle = d.title?.toLowerCase().includes(q);
-        const matchFileName = (d.fileName || '').toLowerCase().includes(q);
-        const matchOrigName = (d.originalName || '').toLowerCase().includes(q);
-        const matchMine = d.mine?.name?.toLowerCase().includes(q);
-        const matchCode = d.mine?.code?.toLowerCase().includes(q);
-        if (!matchTitle && !matchFileName && !matchOrigName && !matchMine && !matchCode) {
-          return false;
-        }
+    return documents.filter((d: any) => {
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const haystack = `${d.id || ''} ${d.title || ''} ${d.fileName || ''} ${d.originalName || ''} ${d.mine?.name || ''} ${d.mine?.code || ''} ${d.category || ''} ${d.verificationStatus || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (mineId && d.mineId !== mineId && d.mine?.id !== mineId) return false;
-      if (categoryFilter && d.category !== categoryFilter) return false;
+      if (mineId && mineId.trim()) {
+        if (d.mineId !== mineId && d.mine?.id !== mineId) return false;
+      }
+      if (categoryFilter && categoryFilter.trim()) {
+        const selectedCat = categoryFilter.toUpperCase().trim();
+        const itemCat = (d.category || '').toUpperCase().trim();
+        const matchesCategory =
+          itemCat === selectedCat ||
+          itemCat.includes(selectedCat) ||
+          selectedCat.includes(itemCat) ||
+          (selectedCat === 'MINING_PLAN' && itemCat.includes('MINING_PLAN')) ||
+          (selectedCat === 'ENVIRONMENTAL' && (itemCat.includes('ENV') || itemCat.includes('FOREST') || itemCat.includes('WATER')));
+        if (!matchesCategory) return false;
+      }
       if (expiringWithinDays) {
         const days = parseInt(expiringWithinDays, 10);
         const now = new Date();
@@ -94,6 +101,13 @@ export const Documents: React.FC = () => {
       return true;
     });
   }, [documents, search, mineId, categoryFilter, expiringWithinDays]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setMineId('');
+    setCategoryFilter('');
+    setExpiringWithinDays('');
+  };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,12 +232,66 @@ export const Documents: React.FC = () => {
         )}
       </div>
 
+      {/* Quick Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            !search && !mineId && !categoryFilter && !expiringWithinDays
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Vault Documents ({documents.length})
+        </button>
+        <button
+          onClick={() => setCategoryFilter(categoryFilter === 'DGMS_APPROVAL' ? '' : 'DGMS_APPROVAL')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            categoryFilter === 'DGMS_APPROVAL'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          DGMS Approvals
+        </button>
+        <button
+          onClick={() => setCategoryFilter(categoryFilter === 'ENVIRONMENTAL_CLEARANCE' ? '' : 'ENVIRONMENTAL_CLEARANCE')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            categoryFilter === 'ENVIRONMENTAL_CLEARANCE'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          EC Clearances
+        </button>
+        <button
+          onClick={() => setCategoryFilter(categoryFilter === 'CONSENT_TO_OPERATE' ? '' : 'CONSENT_TO_OPERATE')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            categoryFilter === 'CONSENT_TO_OPERATE'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          CTO Permits
+        </button>
+        <button
+          onClick={() => setExpiringWithinDays(expiringWithinDays === '90' ? '' : '90')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            expiringWithinDays === '90'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+          }`}
+        >
+          <span>⏰</span> Expiring in 90 Days
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[200px]">
           <input
             type="text"
-            placeholder="Search document title, clearance number, filename..."
+            placeholder="Search document title, clearance number, filename, mine..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none"
@@ -250,9 +318,12 @@ export const Documents: React.FC = () => {
           <option value="DGMS_APPROVAL">DGMS Statutory Approvals</option>
           <option value="ENVIRONMENTAL_CLEARANCE">Environmental Clearance (EC)</option>
           <option value="CONSENT_TO_OPERATE">Consent to Operate (CTO)</option>
-          <option value="MINING_PLAN">Approved Mining Plan</option>
-          <option value="STATUTORY_FORM_IV">Form IV / Form V Returns</option>
+          <option value="MINING_PLAN_APPROVAL">Approved Mining Plan</option>
+          <option value="PESO_EXPLOSIVES_LICENSE">PESO Explosives License</option>
+          <option value="FOREST_CLEARANCE">Stage-II Forest Clearance</option>
+          <option value="GROUND_WATER_NOC">Ground Water NOC</option>
           <option value="SAFETY_COMMITTEE_MINUTES">Safety Committee Records</option>
+          <option value="STATUTORY_FORM_IV">Form IV / Form V Returns</option>
         </select>
 
         <select
@@ -263,12 +334,13 @@ export const Documents: React.FC = () => {
           <option value="">All Expiries</option>
           <option value="30">Expiring in 30 Days</option>
           <option value="90">Expiring in 90 Days</option>
+          <option value="180">Expiring in 180 Days</option>
         </select>
 
         {(search || mineId || categoryFilter || expiringWithinDays) && (
           <button
-            onClick={() => { setSearch(''); setMineId(''); setCategoryFilter(''); setExpiringWithinDays(''); }}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            onClick={handleResetFilters}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset ({filteredDocuments.length})

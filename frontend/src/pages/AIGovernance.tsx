@@ -142,28 +142,36 @@ export const AIGovernance: React.FC = () => {
 
   const { engineStatus, metrics, predictions } = dashboardData;
 
-  // Instantaneous 0ms client-side filter computation
+  // Instantaneous 0ms client-side filtering computation
   const filteredPredictions = useMemo(() => {
     const list = predictions || [];
     return list.filter((p: any) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchName = p.mine?.name?.toLowerCase().includes(q);
-        const matchCode = p.mine?.code?.toLowerCase().includes(q);
-        const matchState = p.mine?.state?.toLowerCase().includes(q);
-        const matchFactors = p.factors?.some((f: string) => f.toLowerCase().includes(q));
-        const matchRecs = p.recommendations?.some((r: string) => r.toLowerCase().includes(q));
-        if (!matchName && !matchCode && !matchState && !matchFactors && !matchRecs) {
-          return false;
-        }
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const factorsText = Array.isArray(p.factors) ? p.factors.join(' ') : '';
+        const recsText = Array.isArray(p.recommendations) ? p.recommendations.join(' ') : '';
+        const driversText = Array.isArray(p.topRiskDrivers) ? p.topRiskDrivers.map((d: any) => `${d.feature} ${d.value}`).join(' ') : '';
+        const haystack = `${p.id || ''} ${p.mine?.name || ''} ${p.mine?.code || ''} ${p.mine?.state || ''} ${p.riskLevel || ''} ${factorsText} ${recsText} ${driversText} ${p.explanationText || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (riskFilter && p.riskLevel !== riskFilter) return false;
+      if (riskFilter && riskFilter.trim()) {
+        const selectedRisk = riskFilter.toUpperCase().trim();
+        const itemRisk = (p.riskLevel || p.predictedRiskLevel || '').toUpperCase().trim();
+        if (itemRisk !== selectedRisk) return false;
+      }
       if (reviewFilter === 'ACCEPTED' && p.isAccepted !== true) return false;
       if (reviewFilter === 'REJECTED' && p.isAccepted !== false) return false;
       if (reviewFilter === 'PENDING' && (p.isAccepted === true || p.isAccepted === false)) return false;
       return true;
     });
   }, [predictions, search, riskFilter, reviewFilter]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setRiskFilter('');
+    setReviewFilter('');
+  };
 
   return (
     <div className="space-y-6 pb-12">

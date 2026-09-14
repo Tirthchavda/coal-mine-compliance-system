@@ -37,6 +37,7 @@ export const Environment: React.FC = () => {
   const [search, setSearch] = useState<string>('');
   const [mineId, setMineId] = useState<string>('');
   const [stabilityFilter, setStabilityFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
 
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [formData, setFormData] = useState({
@@ -80,28 +81,38 @@ export const Environment: React.FC = () => {
     fetchEnv();
   }, []);
 
-  // Instantaneous 0ms client-side filter computation
+  // Instantaneous 0ms client-side filtering computation
   const filteredRecords = useMemo(() => {
     return records.filter((e: any) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchMine = e.mine?.name?.toLowerCase().includes(q);
-        const matchCode = e.mine?.code?.toLowerCase().includes(q);
-        const matchStability = e.overburdenStabilityStatus?.toLowerCase().includes(q);
-        if (!matchMine && !matchCode && !matchStability) {
-          return false;
-        }
+      const stability = (e.overburdenStabilityStatus || (e.obDumpSlopeFactorOfSafety >= 1.35 ? 'STABLE' : 'CRITICAL_CRACKING')).toUpperCase().trim();
+      const statusVal = (e.status || (e.pm10 > 100 || e.obDumpSlopeFactorOfSafety < 1.35 ? 'NON_COMPLIANT' : 'COMPLIANT')).toUpperCase().trim();
+
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const haystack = `${e.id || ''} ${e.mine?.name || ''} ${e.mine?.code || ''} ${stability} ${statusVal} ${e.pm10 || ''} ${e.pm25 || ''} ${e.effluentPH || e.waterPh || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (mineId && e.mineId !== mineId && e.mine?.id !== mineId) return false;
-      if (stabilityFilter && e.overburdenStabilityStatus !== stabilityFilter) return false;
+      if (mineId && mineId.trim()) {
+        if (e.mineId !== mineId && e.mine?.id !== mineId) return false;
+      }
+      if (stabilityFilter && stabilityFilter.trim()) {
+        const selectedStab = stabilityFilter.toUpperCase().trim();
+        if (stability !== selectedStab && !stability.includes(selectedStab) && !selectedStab.includes(stability)) return false;
+      }
+      if (statusFilter && statusFilter.trim()) {
+        const selectedStat = statusFilter.toUpperCase().trim();
+        if (statusVal !== selectedStat && !statusVal.includes(selectedStat) && !selectedStat.includes(statusVal)) return false;
+      }
       return true;
     });
-  }, [records, search, mineId, stabilityFilter]);
+  }, [records, search, mineId, stabilityFilter, statusFilter]);
 
   const handleResetFilters = () => {
     setSearch('');
     setMineId('');
     setStabilityFilter('');
+    setStatusFilter('');
   };
 
   const handleCreateEnv = async (e: React.FormEvent) => {
@@ -257,12 +268,56 @@ export const Environment: React.FC = () => {
         </div>
       )}
 
+      {/* Quick Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            !search && !mineId && !stabilityFilter && !statusFilter
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Logs ({records.length})
+        </button>
+        <button
+          onClick={() => setStabilityFilter(stabilityFilter === 'STABLE' ? '' : 'STABLE')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            stabilityFilter === 'STABLE'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+          }`}
+        >
+          <span>🟢</span> Stable Dump Slope
+        </button>
+        <button
+          onClick={() => setStatusFilter(statusFilter === 'NON_COMPLIANT' ? '' : 'NON_COMPLIANT')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            statusFilter === 'NON_COMPLIANT'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+          }`}
+        >
+          <span>⚠</span> Environmental Breaches
+        </button>
+        <button
+          onClick={() => setStatusFilter(statusFilter === 'COMPLIANT' ? '' : 'COMPLIANT')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            statusFilter === 'COMPLIANT'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          CPCB Compliant
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[200px]">
           <input
             type="text"
-            placeholder="Search environmental records, overburden stability, colliery..."
+            placeholder="Search environmental records, overburden stability, colliery, PM levels..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none"
@@ -286,16 +341,26 @@ export const Environment: React.FC = () => {
           className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
         >
           <option value="">All Overburden Statuses</option>
-          <option value="STABLE">Stable</option>
+          <option value="STABLE">Stable Slope</option>
           <option value="MONITORING_REQUIRED">Monitoring Required</option>
-          <option value="CRITICAL_CRACKING">Critical Cracking</option>
+          <option value="CRITICAL_CRACKING">Critical Stability Hazard</option>
           <option value="DRAINAGE_ISSUES">Drainage Issues</option>
         </select>
 
-        {(search || mineId || stabilityFilter) && (
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
+        >
+          <option value="">All CPCB Statuses</option>
+          <option value="COMPLIANT">Compliant</option>
+          <option value="NON_COMPLIANT">Non-Compliant / Breach</option>
+        </select>
+
+        {(search || mineId || stabilityFilter || statusFilter) && (
           <button
             onClick={handleResetFilters}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset ({filteredRecords.length})
@@ -309,6 +374,7 @@ export const Environment: React.FC = () => {
           Showing <strong className="text-slate-800">{filteredRecords.length}</strong> of <strong className="text-slate-800">{records.length}</strong> CPCB environmental logs
         </span>
         {(search || mineId || stabilityFilter) && (
+        {(search || mineId || stabilityFilter || statusFilter) && (
           <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
             Filtered View Active
           </span>

@@ -71,21 +71,25 @@ export const Users: React.FC = () => {
     fetchUsers();
   }, []);
 
-  // Instantaneous 0ms client-side filter computation
+  // Instantaneous 0ms client-side filtering computation
   const filteredUsers = useMemo(() => {
-    return users.filter((u) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchName = u.name?.toLowerCase().includes(q);
-        const matchEmail = u.email?.toLowerCase().includes(q);
-        const matchDept = u.department?.toLowerCase().includes(q);
-        const matchPhone = u.phone?.toLowerCase().includes(q);
-        if (!matchName && !matchEmail && !matchDept && !matchPhone) {
-          return false;
-        }
+    return users.filter((u: any) => {
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const haystack = `${u.id || ''} ${u.name || ''} ${u.email || ''} ${u.department || ''} ${u.phone || ''} ${u.role || ''} ${u.status || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (roleFilter && u.role !== roleFilter) return false;
-      if (statusFilter && u.status !== statusFilter) return false;
+      if (roleFilter && roleFilter.trim()) {
+        const selectedRole = roleFilter.toUpperCase().trim();
+        const itemRole = (u.role || '').toUpperCase().trim();
+        if (itemRole !== selectedRole && !itemRole.includes(selectedRole) && !selectedRole.includes(itemRole)) return false;
+      }
+      if (statusFilter && statusFilter.trim()) {
+        const selectedStat = statusFilter.toUpperCase().trim();
+        const itemStat = (u.status || '').toUpperCase().trim();
+        if (itemStat !== selectedStat && !itemStat.includes(selectedStat) && !selectedStat.includes(itemStat)) return false;
+      }
       return true;
     });
   }, [users, search, roleFilter, statusFilter]);
@@ -183,12 +187,66 @@ export const Users: React.FC = () => {
         )}
       </div>
 
+      {/* Quick Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            !search && !roleFilter && !statusFilter
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Users ({users.length})
+        </button>
+        <button
+          onClick={() => setRoleFilter(roleFilter === 'SAFETY_INSPECTOR' ? '' : 'SAFETY_INSPECTOR')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            roleFilter === 'SAFETY_INSPECTOR'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Safety Inspectors
+        </button>
+        <button
+          onClick={() => setRoleFilter(roleFilter === 'COMPLIANCE_OFFICER' ? '' : 'COMPLIANCE_OFFICER')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            roleFilter === 'COMPLIANCE_OFFICER'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Compliance Officers
+        </button>
+        <button
+          onClick={() => setRoleFilter(roleFilter === 'MINE_MANAGER' ? '' : 'MINE_MANAGER')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            roleFilter === 'MINE_MANAGER'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Mine Managers
+        </button>
+        <button
+          onClick={() => setRoleFilter(roleFilter === 'CONTRACTOR' ? '' : 'CONTRACTOR')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            roleFilter === 'CONTRACTOR'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Contractors
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[200px]">
           <input
             type="text"
-            placeholder="Search name, email, department..."
+            placeholder="Search name, email, department, phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none"
@@ -209,10 +267,21 @@ export const Users: React.FC = () => {
           <option value="CONTRACTOR">CONTRACTOR</option>
         </select>
 
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
+        >
+          <option value="">All Statuses</option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+          <option value="SUSPENDED">SUSPENDED</option>
+        </select>
+
         {(search || roleFilter || statusFilter) && (
           <button
-            onClick={() => { setSearch(''); setRoleFilter(''); setStatusFilter(''); }}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            onClick={handleResetFilters}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset ({filteredUsers.length})

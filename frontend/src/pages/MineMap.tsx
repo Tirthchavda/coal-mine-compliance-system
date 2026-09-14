@@ -40,6 +40,8 @@ export const MineMap: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [search, setSearch] = useState<string>('');
   const [riskFilter, setRiskFilter] = useState<string>('');
+  const [stateFilter, setStateFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
   const [selectedMine, setSelectedMine] = useState<Mine | null>(MOCK_MINES[0]);
 
   const fetchMines = async () => {
@@ -63,18 +65,33 @@ export const MineMap: React.FC = () => {
 
   const filteredMines = React.useMemo(() => {
     return mines.filter(m => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchName = m.name?.toLowerCase().includes(q);
-        const matchCode = m.code?.toLowerCase().includes(q);
-        const matchState = m.state?.toLowerCase().includes(q);
-        const matchDistrict = m.district?.toLowerCase().includes(q);
-        if (!matchName && !matchCode && !matchState && !matchDistrict) return false;
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const haystack = `${m.name || ''} ${m.code || ''} ${m.owner || ''} ${m.district || ''} ${m.state || ''} ${m.location || ''} ${m.type || ''} ${m.riskLevel || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (riskFilter && m.riskLevel !== riskFilter) return false;
+      if (riskFilter && riskFilter.trim()) {
+        if ((m.riskLevel || '').toUpperCase().trim() !== riskFilter.toUpperCase().trim()) return false;
+      }
+      if (stateFilter && stateFilter.trim()) {
+        if ((m.state || '').toLowerCase().trim() !== stateFilter.toLowerCase().trim()) return false;
+      }
+      if (typeFilter && typeFilter.trim()) {
+        if ((m.type || '').toUpperCase().trim() !== typeFilter.toUpperCase().trim()) return false;
+      }
       return true;
     });
-  }, [mines, search, riskFilter]);
+  }, [mines, search, riskFilter, stateFilter, typeFilter]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setRiskFilter('');
+    setStateFilter('');
+    setTypeFilter('');
+  };
+
+  const hasActiveFilters = Boolean(search || riskFilter || stateFilter || typeFilter);
 
   return (
     <div className="space-y-4 pb-8">
@@ -105,24 +122,99 @@ export const MineMap: React.FC = () => {
         {/* Left Side: Colliery Quick Selector */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 flex flex-col h-full overflow-hidden">
           <div className="mb-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-gov-primary" />
+                Colliery Filter
+              </span>
+              {hasActiveFilters && (
+                <button
+                  onClick={handleResetFilters}
+                  className="text-[11px] font-bold text-rose-600 hover:text-rose-800 transition-colors"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+
             <input
               type="text"
-              placeholder="Search colliery, state..."
+              placeholder="Search colliery, state, district..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:outline-none"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gov-primary"
             />
-            <select
-              value={riskFilter}
-              onChange={(e) => setRiskFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none"
-            >
-              <option value="">All Collieries ({filteredMines.length})</option>
-              <option value="CRITICAL">Critical Risk Only</option>
-              <option value="HIGH">High Risk Only</option>
-              <option value="MEDIUM">Medium Risk Only</option>
-              <option value="LOW">Low Risk / Compliant</option>
-            </select>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              <select
+                value={riskFilter}
+                onChange={(e) => setRiskFilter(e.target.value)}
+                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] font-medium text-slate-800 focus:outline-none"
+              >
+                <option value="">All Risk Levels</option>
+                <option value="CRITICAL">🔴 Critical</option>
+                <option value="HIGH">🟠 High</option>
+                <option value="MEDIUM">🟡 Medium</option>
+                <option value="LOW">🟢 Low / Safe</option>
+              </select>
+
+              <select
+                value={stateFilter}
+                onChange={(e) => setStateFilter(e.target.value)}
+                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] font-medium text-slate-800 focus:outline-none"
+              >
+                <option value="">All States</option>
+                <option value="Jharkhand">Jharkhand</option>
+                <option value="West Bengal">West Bengal</option>
+                <option value="Chhattisgarh">Chhattisgarh</option>
+                <option value="Madhya Pradesh">Madhya Pradesh</option>
+                <option value="Odisha">Odisha</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="Telangana">Telangana</option>
+                <option value="Assam">Assam</option>
+              </select>
+            </div>
+
+            {/* Quick Filter Badges */}
+            <div className="flex flex-wrap gap-1 pt-1">
+              <button
+                onClick={() => { setRiskFilter(''); setStateFilter(''); setTypeFilter(''); }}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                  !hasActiveFilters ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All ({mines.length})
+              </button>
+              <button
+                onClick={() => setRiskFilter('CRITICAL')}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                  riskFilter === 'CRITICAL' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                }`}
+              >
+                Critical
+              </button>
+              <button
+                onClick={() => setRiskFilter('HIGH')}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                  riskFilter === 'HIGH' ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+                }`}
+              >
+                High Risk
+              </button>
+              <button
+                onClick={() => setRiskFilter('LOW')}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                  riskFilter === 'LOW' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                }`}
+              >
+                Compliant
+              </button>
+            </div>
+
+            <div className="text-[10px] font-bold text-slate-500 pt-0.5 flex items-center justify-between">
+              <span>Showing {filteredMines.length} of {mines.length} collieries</span>
+              {hasActiveFilters && <span className="text-gov-primary">Filtered</span>}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">

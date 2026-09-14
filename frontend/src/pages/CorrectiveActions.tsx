@@ -74,30 +74,42 @@ export const CorrectiveActions: React.FC = () => {
     fetchActions();
   }, []);
 
-  // Instantaneous 0ms client-side filter computation
+  // Instantaneous 0ms client-side filtering computation
   const filteredActions = useMemo(() => {
-    return actions.filter((a) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
+    return actions.filter((a: any) => {
+      const isOverdue = new Date(a.deadline) < new Date() && a.status !== 'COMPLETED' && a.status !== 'CLOSED';
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
         const assignedName = typeof a.assignedTo === 'string' ? a.assignedTo : a.assignedTo?.name || '';
-        const matchTitle = a.title?.toLowerCase().includes(q);
-        const matchDesc = a.description?.toLowerCase().includes(q);
-        const matchMine = a.mine?.name?.toLowerCase().includes(q);
-        const matchCode = a.mine?.code?.toLowerCase().includes(q);
-        const matchAssignee = assignedName.toLowerCase().includes(q);
-        if (!matchTitle && !matchDesc && !matchMine && !matchCode && !matchAssignee) {
-          return false;
+        const haystack = `${a.id || ''} ${a.title || ''} ${a.description || ''} ${a.mine?.name || ''} ${a.mine?.code || ''} ${assignedName} ${a.status || ''} ${a.priority || ''} ${a.remarks || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
+      }
+      if (mineId && mineId.trim()) {
+        if (a.mineId !== mineId && a.mine?.id !== mineId) return false;
+      }
+      if (statusFilter && statusFilter.trim()) {
+        const selectedStat = statusFilter.toUpperCase().trim();
+        if (selectedStat === 'OVERDUE') {
+          if (!isOverdue) return false;
+        } else {
+          const itemStat = (a.status || '').toUpperCase().trim();
+          if (itemStat !== selectedStat && !itemStat.includes(selectedStat) && !selectedStat.includes(itemStat)) return false;
         }
       }
-      if (mineId && a.mineId !== mineId && a.mine?.id !== mineId) return false;
-      if (statusFilter && a.status !== statusFilter) return false;
       if (overdueOnly === 'true') {
-        const isOverdue = new Date(a.deadline) < new Date() && a.status !== 'COMPLETED' && a.status !== 'CLOSED';
         if (!isOverdue) return false;
       }
       return true;
     });
   }, [actions, search, mineId, statusFilter, overdueOnly]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setMineId('');
+    setStatusFilter('');
+    setOverdueOnly('');
+  };
 
   const handleUpdateProgress = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,12 +262,56 @@ export const CorrectiveActions: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            !search && !mineId && !statusFilter && !overdueOnly
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Actions ({actions.length})
+        </button>
+        <button
+          onClick={() => setOverdueOnly(overdueOnly === 'true' ? '' : 'true')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            overdueOnly === 'true'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+          }`}
+        >
+          <span>⚠</span> Overdue Tasks ({actions.filter(a => new Date(a.deadline) < new Date() && a.status !== 'COMPLETED' && a.status !== 'CLOSED').length})
+        </button>
+        <button
+          onClick={() => setStatusFilter(statusFilter === 'IN_PROGRESS' ? '' : 'IN_PROGRESS')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            statusFilter === 'IN_PROGRESS'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+          }`}
+        >
+          <span>🟡</span> In Progress ({actions.filter(a => a.status === 'IN_PROGRESS').length})
+        </button>
+        <button
+          onClick={() => setStatusFilter(statusFilter === 'COMPLETED' ? '' : 'COMPLETED')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            statusFilter === 'COMPLETED'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+          }`}
+        >
+          <span>🟢</span> Completed ({actions.filter(a => a.status === 'COMPLETED').length})
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[200px]">
           <input
             type="text"
-            placeholder="Search CAPA task, assignee, colliery..."
+            placeholder="Search CAPA task, assignee, colliery, priority..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none"
@@ -299,8 +355,8 @@ export const CorrectiveActions: React.FC = () => {
 
         {(search || mineId || statusFilter || overdueOnly) && (
           <button
-            onClick={() => { setSearch(''); setMineId(''); setStatusFilter(''); setOverdueOnly(''); }}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            onClick={handleResetFilters}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset ({filteredActions.length})

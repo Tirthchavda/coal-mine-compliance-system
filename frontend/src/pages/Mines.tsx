@@ -71,23 +71,24 @@ export const Mines: React.FC = () => {
   // Instantaneous 0ms client-side filter computation
   const filteredMines = useMemo(() => {
     return mines.filter((m) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchName = m.name?.toLowerCase().includes(q);
-        const matchCode = m.code?.toLowerCase().includes(q);
-        const matchOwner = m.owner?.toLowerCase().includes(q);
-        const matchDistrict = m.district?.toLowerCase().includes(q);
-        const matchState = m.state?.toLowerCase().includes(q);
-        const matchManager = m.managerName?.toLowerCase().includes(q);
-        const matchLoc = m.location?.toLowerCase().includes(q);
-        if (!matchName && !matchCode && !matchOwner && !matchDistrict && !matchState && !matchManager && !matchLoc) {
-          return false;
-        }
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const haystack = `${m.name || ''} ${m.code || ''} ${m.owner || ''} ${m.district || ''} ${m.state || ''} ${m.managerName || ''} ${m.location || ''} ${m.type || ''} ${m.riskLevel || ''} ${m.operationalStatus || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (stateFilter && m.state !== stateFilter) return false;
-      if (typeFilter && m.type !== typeFilter) return false;
-      if (statusFilter && m.operationalStatus !== statusFilter) return false;
-      if (riskFilter && m.riskLevel !== riskFilter) return false;
+      if (stateFilter && stateFilter.trim()) {
+        if ((m.state || '').toLowerCase().trim() !== stateFilter.toLowerCase().trim()) return false;
+      }
+      if (typeFilter && typeFilter.trim()) {
+        if ((m.type || '').toUpperCase().trim() !== typeFilter.toUpperCase().trim()) return false;
+      }
+      if (statusFilter && statusFilter.trim()) {
+        if ((m.operationalStatus || '').toUpperCase().trim() !== statusFilter.toUpperCase().trim()) return false;
+      }
+      if (riskFilter && riskFilter.trim()) {
+        if ((m.riskLevel || '').toUpperCase().trim() !== riskFilter.toUpperCase().trim()) return false;
+      }
       return true;
     });
   }, [mines, search, stateFilter, typeFilter, statusFilter, riskFilter]);
@@ -199,7 +200,7 @@ export const Mines: React.FC = () => {
             National Coal Mines Directory
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Surveillance registry of 12 high-capacity Indian coal collieries under DGMS oversight.
+            Surveillance registry of 15 high-capacity Indian coal collieries under DGMS oversight.
           </p>
         </div>
 
@@ -214,12 +215,66 @@ export const Mines: React.FC = () => {
         )}
       </div>
 
+      {/* Quick Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            !search && !stateFilter && !typeFilter && !statusFilter && !riskFilter
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Collieries ({mines.length})
+        </button>
+        <button
+          onClick={() => setRiskFilter(riskFilter === 'CRITICAL' ? '' : 'CRITICAL')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            riskFilter === 'CRITICAL'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+          }`}
+        >
+          <span>🔴</span> Critical Risk ({mines.filter(m => m.riskLevel === 'CRITICAL').length})
+        </button>
+        <button
+          onClick={() => setRiskFilter(riskFilter === 'HIGH' ? '' : 'HIGH')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            riskFilter === 'HIGH'
+              ? 'bg-orange-600 text-white shadow-xs'
+              : 'bg-orange-50 text-orange-800 border border-orange-200 hover:bg-orange-100'
+          }`}
+        >
+          <span>🟠</span> High Risk ({mines.filter(m => m.riskLevel === 'HIGH').length})
+        </button>
+        <button
+          onClick={() => setTypeFilter(typeFilter === 'OPENCAST' ? '' : 'OPENCAST')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            typeFilter === 'OPENCAST'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Opencast Mines ({mines.filter(m => m.type === 'OPENCAST').length})
+        </button>
+        <button
+          onClick={() => setTypeFilter(typeFilter === 'UNDERGROUND' ? '' : 'UNDERGROUND')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            typeFilter === 'UNDERGROUND'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Underground Mines ({mines.filter(m => m.type === 'UNDERGROUND').length})
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[200px]">
           <input
             type="text"
-            placeholder="Search mine name, code, manager, location..."
+            placeholder="Search mine name, code, manager, location, state..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gov-primary text-slate-900 text-xs"
@@ -239,6 +294,7 @@ export const Mines: React.FC = () => {
           <option value="Madhya Pradesh">Madhya Pradesh</option>
           <option value="Telangana">Telangana</option>
           <option value="Maharashtra">Maharashtra</option>
+          <option value="Tamil Nadu">Tamil Nadu</option>
         </select>
 
         <select
@@ -250,6 +306,17 @@ export const Mines: React.FC = () => {
           <option value="OPENCAST">OPENCAST</option>
           <option value="UNDERGROUND">UNDERGROUND</option>
           <option value="MIXED">MIXED</option>
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
+        >
+          <option value="">All Operational Statuses</option>
+          <option value="OPERATIONAL">OPERATIONAL</option>
+          <option value="TEMPORARILY_CLOSED">TEMPORARILY CLOSED</option>
+          <option value="MAINTENANCE">MAINTENANCE</option>
         </select>
 
         <select

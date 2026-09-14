@@ -37,6 +37,7 @@ export const Violations: React.FC = () => {
   // Filters
   const [search, setSearch] = useState<string>(initialSearch);
   const [mineId, setMineId] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>(initialSeverity);
   const [statusFilter, setStatusFilter] = useState<string>('');
 
@@ -88,25 +89,42 @@ export const Violations: React.FC = () => {
 
   // Instantaneous 0ms client-side filter computation
   const filteredViolations = useMemo(() => {
-    return violations.filter((v) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchTitle = v.title?.toLowerCase().includes(q);
-        const matchDesc = v.description?.toLowerCase().includes(q);
-        const matchMine = v.mine?.name?.toLowerCase().includes(q);
-        const matchCode = v.mine?.code?.toLowerCase().includes(q);
-        const matchCat = v.category?.toLowerCase().includes(q);
-        const matchId = v.id?.toLowerCase().includes(q);
-        if (!matchTitle && !matchDesc && !matchMine && !matchCode && !matchCat && !matchId) {
-          return false;
-        }
+    return violations.filter((v: any) => {
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const haystack = `${v.id || ''} ${v.title || ''} ${v.description || ''} ${v.mine?.name || ''} ${v.mine?.code || ''} ${v.category || ''} ${v.severity || ''} ${v.status || ''} ${v.act || ''} ${v.regulationReference || ''} ${v.remarks || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (mineId && v.mineId !== mineId && v.mine?.id !== mineId) return false;
-      if (severityFilter && v.severity !== severityFilter) return false;
-      if (statusFilter && v.status !== statusFilter) return false;
+      if (mineId && mineId.trim()) {
+        if (v.mineId !== mineId && v.mine?.id !== mineId) return false;
+      }
+      if (categoryFilter && categoryFilter.trim()) {
+        const selectedCat = categoryFilter.toUpperCase().trim();
+        const itemCat = (v.category || '').toUpperCase().trim();
+        if (itemCat !== selectedCat && !itemCat.includes(selectedCat) && !selectedCat.includes(itemCat)) return false;
+      }
+      if (severityFilter && severityFilter.trim()) {
+        const selectedSev = severityFilter.toUpperCase().trim();
+        const itemSev = (v.severity || '').toUpperCase().trim();
+        if (itemSev !== selectedSev) return false;
+      }
+      if (statusFilter && statusFilter.trim()) {
+        const selectedStat = statusFilter.toUpperCase().trim();
+        const itemStat = (v.status || '').toUpperCase().trim();
+        if (itemStat !== selectedStat && !itemStat.includes(selectedStat) && !selectedStat.includes(itemStat)) return false;
+      }
       return true;
     });
-  }, [violations, search, mineId, severityFilter, statusFilter]);
+  }, [violations, search, mineId, categoryFilter, severityFilter, statusFilter]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setMineId('');
+    setCategoryFilter('');
+    setSeverityFilter('');
+    setStatusFilter('');
+  };
 
   const handleCreateViolation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -337,6 +355,17 @@ export const Violations: React.FC = () => {
         </select>
 
         <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
+        >
+          <option value="">All Categories</option>
+          <option value="SAFETY">Safety</option>
+          <option value="ENVIRONMENT">Environment</option>
+          <option value="HEALTH">Health & First Aid</option>
+        </select>
+
+        <select
           value={severityFilter}
           onChange={(e) => setSeverityFilter(e.target.value)}
           className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
@@ -361,10 +390,10 @@ export const Violations: React.FC = () => {
           <option value="CLOSED">CLOSED</option>
         </select>
 
-        {(search || mineId || severityFilter || statusFilter) && (
+        {(search || mineId || categoryFilter || severityFilter || statusFilter) && (
           <button
-            onClick={() => { setSearch(''); setMineId(''); setSeverityFilter(''); setStatusFilter(''); }}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            onClick={handleResetFilters}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset ({filteredViolations.length})
@@ -379,6 +408,8 @@ export const Violations: React.FC = () => {
         </span>
         {(search || mineId || severityFilter || statusFilter) && (
           <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
+        {(search || mineId || categoryFilter || severityFilter || statusFilter) && (
+          <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
             Filtered View Active
           </span>
         )}

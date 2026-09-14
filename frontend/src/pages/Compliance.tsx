@@ -87,23 +87,40 @@ export const Compliance: React.FC = () => {
   // Instantaneous 0ms client-side filtering computation
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
-      if (search) {
-        const q = search.toLowerCase().trim();
-        const matchTitle = r.requirement?.title?.toLowerCase().includes(q);
-        const matchClause = r.requirement?.clauseNumber?.toLowerCase().includes(q);
-        const matchAct = r.requirement?.act?.toLowerCase().includes(q);
-        const matchDesc = r.requirement?.description?.toLowerCase().includes(q);
-        const matchMine = r.mine?.name?.toLowerCase().includes(q);
-        const matchCode = r.mine?.code?.toLowerCase().includes(q);
-        const matchRemarks = r.remarks?.toLowerCase().includes(q);
-        if (!matchTitle && !matchClause && !matchAct && !matchDesc && !matchMine && !matchCode && !matchRemarks) {
-          return false;
-        }
+      if (search && search.trim()) {
+        const tokens = search.toLowerCase().trim().split(/\s+/);
+        const haystack = `${r.requirement?.title || ''} ${r.requirement?.code || ''} ${r.requirement?.regulationReference || ''} ${r.requirement?.act || ''} ${r.requirement?.description || ''} ${r.requirement?.requirement || ''} ${r.mine?.name || ''} ${r.mine?.code || ''} ${r.notes || ''} ${r.remarks || ''} ${r.requirement?.category || ''} ${r.status || ''} ${r.riskScore || ''}`.toLowerCase();
+        const allMatched = tokens.every((tok) => haystack.includes(tok));
+        if (!allMatched) return false;
       }
-      if (mineId && r.mineId !== mineId && r.mine?.id !== mineId) return false;
-      if (category && r.requirement?.category !== category) return false;
-      if (status && r.status !== status) return false;
-      if (riskLevel && r.riskLevel !== riskLevel) return false;
+      if (mineId && mineId.trim()) {
+        if (r.mineId !== mineId && r.mine?.id !== mineId) return false;
+      }
+      if (category && category.trim()) {
+        const selectedCat = category.toUpperCase().trim();
+        const itemCat = (r.requirement?.category || (r as any).category || '').toUpperCase().trim();
+        const matchesCategory =
+          itemCat === selectedCat ||
+          itemCat.includes(selectedCat) ||
+          selectedCat.includes(itemCat) ||
+          (selectedCat === 'SAFETY' && itemCat.includes('SAFETY')) ||
+          (selectedCat === 'ENVIRONMENTAL' && (itemCat.includes('ENV') || itemCat.includes('WATER') || itemCat.includes('AIR'))) ||
+          (selectedCat === 'LABOUR' && (itemCat.includes('HEALTH') || itemCat.includes('LABOUR') || itemCat.includes('WELFARE'))) ||
+          (selectedCat === 'STATUTORY' && itemCat.includes('STATUTORY'));
+        if (!matchesCategory) return false;
+      }
+      if (status && status.trim()) {
+        const selectedStat = status.toUpperCase().trim();
+        const itemStat = (r.status || '').toUpperCase().trim();
+        const matchesStatus =
+          itemStat === selectedStat ||
+          itemStat.includes(selectedStat) ||
+          selectedStat.includes(itemStat);
+        if (!matchesStatus) return false;
+      }
+      if (riskLevel && riskLevel.trim()) {
+        if ((r.riskLevel || '').toUpperCase().trim() !== riskLevel.toUpperCase().trim()) return false;
+      }
       return true;
     });
   }, [records, search, mineId, category, status, riskLevel]);
@@ -223,6 +240,70 @@ export const Compliance: React.FC = () => {
         )}
       </div>
 
+      {/* Quick Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            !search && !mineId && !category && !status && !riskLevel
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Obligations ({records.length})
+        </button>
+        <button
+          onClick={() => setStatus(status === 'NON_COMPLIANT' ? '' : 'NON_COMPLIANT')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            status === 'NON_COMPLIANT'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+          }`}
+        >
+          <span>🔴</span> Non-Compliant ({records.filter(r => r.status === 'NON_COMPLIANT').length})
+        </button>
+        <button
+          onClick={() => setStatus(status === 'UNDER_REVIEW' ? '' : 'UNDER_REVIEW')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            status === 'UNDER_REVIEW'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+          }`}
+        >
+          <span>🟡</span> Under Review ({records.filter(r => r.status === 'UNDER_REVIEW' || r.status === 'PENDING').length})
+        </button>
+        <button
+          onClick={() => setStatus(status === 'COMPLIANT' ? '' : 'COMPLIANT')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            status === 'COMPLIANT'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+          }`}
+        >
+          <span>🟢</span> Compliant ({records.filter(r => r.status === 'COMPLIANT').length})
+        </button>
+        <button
+          onClick={() => setCategory(category === 'SAFETY' ? '' : 'SAFETY')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            category === 'SAFETY'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Safety CMR 2017
+        </button>
+        <button
+          onClick={() => setCategory(category === 'ENVIRONMENTAL' ? '' : 'ENVIRONMENTAL')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            category === 'ENVIRONMENTAL'
+              ? 'bg-gov-primary text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Environmental CPCB
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[200px]">
@@ -252,12 +333,13 @@ export const Compliance: React.FC = () => {
           className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
         >
           <option value="">All Statutory Categories</option>
-          <option value="SAFETY">Safety (CMR 2017)</option>
-          <option value="ENVIRONMENTAL">Environmental (EPA/CPCB)</option>
+          <option value="SAFETY">Safety (CMR 2017 & Strata)</option>
+          <option value="ENVIRONMENTAL">Environmental (Air & Water)</option>
+          <option value="OCCUPATIONAL_HEALTH">Occupational Health & PME</option>
+          <option value="STATUTORY_RETURNS">Statutory Returns (Form IV)</option>
+          <option value="HEMM">HEMM Heavy Machinery</option>
           <option value="MINING">Mining & DGMS</option>
           <option value="LABOUR">Labour & Creche</option>
-          <option value="STATUTORY">Statutory Returns</option>
-          <option value="OPERATIONAL">Operational HEMM</option>
         </select>
 
         <select
@@ -268,7 +350,9 @@ export const Compliance: React.FC = () => {
           <option value="">All Statuses</option>
           <option value="COMPLIANT">Compliant</option>
           <option value="PARTIALLY_COMPLIANT">Partially Compliant</option>
+          <option value="UNDER_REVIEW">Under Review</option>
           <option value="NON_COMPLIANT">Non-Compliant</option>
+          <option value="ACTION_REQUIRED">Action Required</option>
           <option value="PENDING">Pending Verification</option>
           <option value="EXPIRED">Expired</option>
         </select>
@@ -276,7 +360,7 @@ export const Compliance: React.FC = () => {
         {(search || mineId || category || status || riskLevel) && (
           <button
             onClick={handleResetFilters}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset ({filteredRecords.length})
