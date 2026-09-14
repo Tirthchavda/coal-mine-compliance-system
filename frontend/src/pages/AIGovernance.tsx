@@ -28,8 +28,13 @@ const defaultAIDashboardData = {
   },
   metrics: {
     totalPredictions: MOCK_AI_PREDICTIONS.length,
+    highRiskMinesCount: MOCK_AI_PREDICTIONS.filter(p => (p.predictedRiskLevel || p.riskLevel) === 'CRITICAL' || (p.predictedRiskLevel || p.riskLevel) === 'HIGH').length,
     criticalCount: MOCK_AI_PREDICTIONS.filter(p => (p.predictedRiskLevel || p.riskLevel) === 'CRITICAL').length,
     highCount: MOCK_AI_PREDICTIONS.filter(p => (p.predictedRiskLevel || p.riskLevel) === 'HIGH').length,
+    avgConfidence: 94.2,
+    humanAccepted: 8,
+    humanRejected: 2,
+    pendingReview: 5,
     humanReviewedPercentage: 86.7
   },
   predictions: MOCK_AI_PREDICTIONS.map((p, idx) => ({

@@ -1,4 +1,2 @@
 @echo off
-echo TEST_OUTPUT_SUCCESS
-echo 1=%1 2=%2 3=%3 4=%4 5=%5 6=%6 7=%7 8=%8 9=%9
-
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass %*

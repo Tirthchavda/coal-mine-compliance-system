@@ -42,7 +42,6 @@ export const Inspections: React.FC = () => {
   const [showScheduleModal, setShowScheduleModal] = useState<boolean>(initialNew === 'true');
   const [scheduleData, setScheduleData] = useState({
     mineId: initialMineId,
-    inspectionType: 'ROUTINE_STATUTORY',
     inspectionType: 'ROUTINE_SAFETY',
     scheduledDate: new Date().toISOString().split('T')[0],
     summary: 'Quarterly statutory surveillance of colliery workings and safety mechanisms.'
