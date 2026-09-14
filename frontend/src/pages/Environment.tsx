@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { EnvironmentalRecord, Mine } from '../types';
 import { DataTable, Column } from '../components/DataTable';
@@ -11,7 +11,9 @@ import {
   Droplets,
   Volume2,
   AlertTriangle,
-  ShieldCheck
+  ShieldCheck,
+  RotateCcw,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_ENVIRONMENT, MOCK_MINES } from '../data/mockData';
@@ -31,7 +33,11 @@ export const Environment: React.FC = () => {
   const [analytics, setAnalytics] = useState<any>(defaultEnvAnalytics);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Filters
+  const [search, setSearch] = useState<string>('');
   const [mineId, setMineId] = useState<string>('');
+  const [stabilityFilter, setStabilityFilter] = useState<string>('');
+
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     mineId: '',
@@ -49,40 +55,54 @@ export const Environment: React.FC = () => {
   const fetchAuxData = async () => {
     try {
       const res = await api.get('/mines', { timeout: 8000 });
-      if (res.data?.success) setMines(res.data.data);
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
+        setMines(res.data.data);
+      }
     } catch (e) {}
   };
 
   const fetchEnv = async () => {
     try {
-      const params = new URLSearchParams();
-      if (mineId) params.append('mineId', mineId);
-
-      const res = await api.get(`/environment?${params.toString()}`, { timeout: 8000 });
-      if (res.data?.success && res.data?.data) {
+      const res = await api.get('/environment', { timeout: 8000 });
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
         setRecords(res.data.data);
         if (res.data.analytics) setAnalytics(res.data.analytics);
-        return;
       }
     } catch (err) {
       console.warn('Using pre-seeded environmental CPCB records');
     } finally {
       setIsLoading(false);
     }
-
-    // Client-side fallback filter
-    let filtered = [...MOCK_ENVIRONMENT] as any[];
-    if (mineId) filtered = filtered.filter(e => (e.mineId === mineId || e.mine?.id === mineId));
-    setRecords(filtered);
   };
 
   useEffect(() => {
     fetchAuxData();
+    fetchEnv();
   }, []);
 
-  useEffect(() => {
-    fetchEnv();
-  }, [mineId]);
+  // Instantaneous 0ms client-side filter computation
+  const filteredRecords = useMemo(() => {
+    return records.filter((e: any) => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const matchMine = e.mine?.name?.toLowerCase().includes(q);
+        const matchCode = e.mine?.code?.toLowerCase().includes(q);
+        const matchStability = e.overburdenStabilityStatus?.toLowerCase().includes(q);
+        if (!matchMine && !matchCode && !matchStability) {
+          return false;
+        }
+      }
+      if (mineId && e.mineId !== mineId && e.mine?.id !== mineId) return false;
+      if (stabilityFilter && e.overburdenStabilityStatus !== stabilityFilter) return false;
+      return true;
+    });
+  }, [records, search, mineId, stabilityFilter]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setMineId('');
+    setStabilityFilter('');
+  };
 
   const handleCreateEnv = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,7 +258,17 @@ export const Environment: React.FC = () => {
       )}
 
       {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3 text-xs">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
+        <div className="flex-1 min-w-[200px]">
+          <input
+            type="text"
+            placeholder="Search environmental records, overburden stability, colliery..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none"
+          />
+        </div>
+
         <select
           value={mineId}
           onChange={(e) => setMineId(e.target.value)}
@@ -249,12 +279,46 @@ export const Environment: React.FC = () => {
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
+
+        <select
+          value={stabilityFilter}
+          onChange={(e) => setStabilityFilter(e.target.value)}
+          className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
+        >
+          <option value="">All Overburden Statuses</option>
+          <option value="STABLE">Stable</option>
+          <option value="MONITORING_REQUIRED">Monitoring Required</option>
+          <option value="CRITICAL_CRACKING">Critical Cracking</option>
+          <option value="DRAINAGE_ISSUES">Drainage Issues</option>
+        </select>
+
+        {(search || mineId || stabilityFilter) && (
+          <button
+            onClick={handleResetFilters}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Reset ({filteredRecords.length})
+          </button>
+        )}
+      </div>
+
+      {/* Showing Count Information */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>
+          Showing <strong className="text-slate-800">{filteredRecords.length}</strong> of <strong className="text-slate-800">{records.length}</strong> CPCB environmental logs
+        </span>
+        {(search || mineId || stabilityFilter) && (
+          <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
+            Filtered View Active
+          </span>
+        )}
       </div>
 
       {/* Table */}
       <DataTable
         columns={columns}
-        data={records}
+        data={filteredRecords}
         isLoading={isLoading}
       />
 

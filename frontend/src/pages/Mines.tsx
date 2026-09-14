@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { Mine, MineType, OperationalStatus, RiskLevel } from '../types';
@@ -53,15 +53,8 @@ export const Mines: React.FC = () => {
 
   const fetchMines = async () => {
     try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (stateFilter) params.append('state', stateFilter);
-      if (typeFilter) params.append('type', typeFilter);
-      if (statusFilter) params.append('status', statusFilter);
-      if (riskFilter) params.append('riskLevel', riskFilter);
-
-      const res = await api.get(`/mines?${params.toString()}`, { timeout: 8000 });
-      if (res.data?.success && res.data?.data) {
+      const res = await api.get('/mines', { timeout: 8000 });
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
         setMines(res.data.data);
       }
     } catch (err) {
@@ -73,7 +66,31 @@ export const Mines: React.FC = () => {
 
   useEffect(() => {
     fetchMines();
-  }, [search, stateFilter, typeFilter, statusFilter, riskFilter]);
+  }, []);
+
+  // Instantaneous 0ms client-side filter computation
+  const filteredMines = useMemo(() => {
+    return mines.filter((m) => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const matchName = m.name?.toLowerCase().includes(q);
+        const matchCode = m.code?.toLowerCase().includes(q);
+        const matchOwner = m.owner?.toLowerCase().includes(q);
+        const matchDistrict = m.district?.toLowerCase().includes(q);
+        const matchState = m.state?.toLowerCase().includes(q);
+        const matchManager = m.managerName?.toLowerCase().includes(q);
+        const matchLoc = m.location?.toLowerCase().includes(q);
+        if (!matchName && !matchCode && !matchOwner && !matchDistrict && !matchState && !matchManager && !matchLoc) {
+          return false;
+        }
+      }
+      if (stateFilter && m.state !== stateFilter) return false;
+      if (typeFilter && m.type !== typeFilter) return false;
+      if (statusFilter && m.operationalStatus !== statusFilter) return false;
+      if (riskFilter && m.riskLevel !== riskFilter) return false;
+      return true;
+    });
+  }, [mines, search, stateFilter, typeFilter, statusFilter, riskFilter]);
 
   const handleResetFilters = () => {
     setSearch('');
@@ -253,15 +270,27 @@ export const Mines: React.FC = () => {
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Reset
+            Reset ({filteredMines.length})
           </button>
+        )}
+      </div>
+
+      {/* Showing Count Information */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>
+          Showing <strong className="text-slate-800">{filteredMines.length}</strong> of <strong className="text-slate-800">{mines.length}</strong> registered collieries
+        </span>
+        {(search || stateFilter || typeFilter || statusFilter || riskFilter) && (
+          <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
+            Filtered View Active
+          </span>
         )}
       </div>
 
       {/* Table */}
       <DataTable
         columns={columns}
-        data={mines}
+        data={filteredMines}
         isLoading={isLoading}
         onRowClick={(m) => navigate(`/mines/${m.id}`)}
       />

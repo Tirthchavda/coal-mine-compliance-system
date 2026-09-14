@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { Violation, Mine, ViolationSeverity } from '../types';
@@ -62,43 +62,20 @@ export const Violations: React.FC = () => {
   const fetchAuxData = async () => {
     try {
       const res = await api.get('/mines', { timeout: 8000 });
-      if (res.data?.success) setMines(res.data.data);
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
+        setMines(res.data.data);
+      }
     } catch (e) {}
   };
 
   const fetchViolations = async () => {
     try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (mineId) params.append('mineId', mineId);
-      if (severityFilter) params.append('severity', severityFilter);
-      if (statusFilter) params.append('status', statusFilter);
-
-      const res = await api.get(`/violations?${params.toString()}`, { timeout: 8000 });
-      if (res.data?.success && res.data?.data) {
+      const res = await api.get('/violations', { timeout: 8000 });
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
         setViolations(res.data.data);
       }
     } catch (err) {
       console.warn('Using pre-seeded DGMS statutory violation notices');
-      let filtered = [...MOCK_VIOLATIONS];
-      if (search) {
-        const q = search.toLowerCase();
-        filtered = filtered.filter(v =>
-          v.title.toLowerCase().includes(q) ||
-          v.description.toLowerCase().includes(q) ||
-          v.mine?.name?.toLowerCase().includes(q)
-        );
-      }
-      if (mineId) {
-        filtered = filtered.filter(v => v.mineId === mineId);
-      }
-      if (severityFilter) {
-        filtered = filtered.filter(v => v.severity === severityFilter);
-      }
-      if (statusFilter) {
-        filtered = filtered.filter(v => v.status === statusFilter);
-      }
-      setViolations(filtered);
     } finally {
       setIsLoading(false);
     }
@@ -106,11 +83,30 @@ export const Violations: React.FC = () => {
 
   useEffect(() => {
     fetchAuxData();
+    fetchViolations();
   }, []);
 
-  useEffect(() => {
-    fetchViolations();
-  }, [search, mineId, severityFilter, statusFilter]);
+  // Instantaneous 0ms client-side filter computation
+  const filteredViolations = useMemo(() => {
+    return violations.filter((v) => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const matchTitle = v.title?.toLowerCase().includes(q);
+        const matchDesc = v.description?.toLowerCase().includes(q);
+        const matchMine = v.mine?.name?.toLowerCase().includes(q);
+        const matchCode = v.mine?.code?.toLowerCase().includes(q);
+        const matchCat = v.category?.toLowerCase().includes(q);
+        const matchId = v.id?.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchMine && !matchCode && !matchCat && !matchId) {
+          return false;
+        }
+      }
+      if (mineId && v.mineId !== mineId && v.mine?.id !== mineId) return false;
+      if (severityFilter && v.severity !== severityFilter) return false;
+      if (statusFilter && v.status !== statusFilter) return false;
+      return true;
+    });
+  }, [violations, search, mineId, severityFilter, statusFilter]);
 
   const handleCreateViolation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -371,15 +367,27 @@ export const Violations: React.FC = () => {
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Reset
+            Reset ({filteredViolations.length})
           </button>
+        )}
+      </div>
+
+      {/* Showing Count Information */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>
+          Showing <strong className="text-slate-800">{filteredViolations.length}</strong> of <strong className="text-slate-800">{violations.length}</strong> statutory violation notices
+        </span>
+        {(search || mineId || severityFilter || statusFilter) && (
+          <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
+            Filtered View Active
+          </span>
         )}
       </div>
 
       {/* Table */}
       <DataTable
         columns={columns}
-        data={violations}
+        data={filteredViolations}
         isLoading={isLoading}
       />
 

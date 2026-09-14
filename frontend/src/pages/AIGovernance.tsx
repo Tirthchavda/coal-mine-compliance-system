@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { AIPrediction, Mine } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
@@ -13,7 +13,8 @@ import {
   Cpu,
   HelpCircle,
   ArrowRight,
-  TrendingUp
+  TrendingUp,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_AI_PREDICTIONS, MOCK_MINES } from '../data/mockData';
@@ -52,6 +53,11 @@ export const AIGovernance: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(defaultAIDashboardData);
   const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Predictions Filters
+  const [search, setSearch] = useState<string>('');
+  const [riskFilter, setRiskFilter] = useState<string>('');
+  const [reviewFilter, setReviewFilter] = useState<string>('');
 
   // Run Analysis Modal
   const [selectedMineId, setSelectedMineId] = useState<string>(MOCK_MINES[0]?.id || '');
@@ -135,6 +141,29 @@ export const AIGovernance: React.FC = () => {
   }
 
   const { engineStatus, metrics, predictions } = dashboardData;
+
+  // Instantaneous 0ms client-side filter computation
+  const filteredPredictions = useMemo(() => {
+    const list = predictions || [];
+    return list.filter((p: any) => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const matchName = p.mine?.name?.toLowerCase().includes(q);
+        const matchCode = p.mine?.code?.toLowerCase().includes(q);
+        const matchState = p.mine?.state?.toLowerCase().includes(q);
+        const matchFactors = p.factors?.some((f: string) => f.toLowerCase().includes(q));
+        const matchRecs = p.recommendations?.some((r: string) => r.toLowerCase().includes(q));
+        if (!matchName && !matchCode && !matchState && !matchFactors && !matchRecs) {
+          return false;
+        }
+      }
+      if (riskFilter && p.riskLevel !== riskFilter) return false;
+      if (reviewFilter === 'ACCEPTED' && p.isAccepted !== true) return false;
+      if (reviewFilter === 'REJECTED' && p.isAccepted !== false) return false;
+      if (reviewFilter === 'PENDING' && (p.isAccepted === true || p.isAccepted === false)) return false;
+      return true;
+    });
+  }, [predictions, search, riskFilter, reviewFilter]);
 
   return (
     <div className="space-y-6 pb-12">
@@ -306,12 +335,68 @@ export const AIGovernance: React.FC = () => {
 
       {/* Predictions Registry */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
-        <h3 className="text-sm font-bold text-slate-900">
-          Colliery AI Risk Diagnostics & Human Review Ledger ({predictions?.length || 0})
-        </h3>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Colliery AI Risk Diagnostics & Human Review Ledger ({filteredPredictions.length} of {predictions?.length || 0})
+            </h3>
+            <p className="text-xs text-slate-500">Live explainable risk indices and safety officer sign-offs</p>
+          </div>
+
+          {(search || riskFilter || reviewFilter) && (
+            <button
+              onClick={() => { setSearch(''); setRiskFilter(''); setReviewFilter(''); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset Filters
+            </button>
+          )}
+        </div>
+
+        {/* Filter Bar */}
+        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex-1 min-w-[200px]">
+            <input
+              type="text"
+              placeholder="Search mine name, state, risk factors, recommendations..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none"
+            />
+          </div>
+
+          <select
+            value={riskFilter}
+            onChange={(e) => setRiskFilter(e.target.value)}
+            className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
+          >
+            <option value="">All Risk Levels</option>
+            <option value="CRITICAL">Critical Risk</option>
+            <option value="HIGH">High Risk</option>
+            <option value="MEDIUM">Medium Risk</option>
+            <option value="LOW">Low Risk</option>
+          </select>
+
+          <select
+            value={reviewFilter}
+            onChange={(e) => setReviewFilter(e.target.value)}
+            className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-700 text-xs focus:outline-none"
+          >
+            <option value="">All Review Statuses</option>
+            <option value="ACCEPTED">Accepted by Officer</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="PENDING">Pending Review</option>
+          </select>
+        </div>
 
         <div className="space-y-3">
-          {predictions?.map((p: any) => (
+          {filteredPredictions.length === 0 ? (
+            <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-xs">
+              No AI predictions found matching your search and filter criteria.
+            </div>
+          ) : (
+            filteredPredictions.map((p: any) => (
             <div
               key={p.id}
               className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors text-xs space-y-3"

@@ -38,13 +38,14 @@ export const MineMap: React.FC = () => {
 
   const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [search, setSearch] = useState<string>('');
   const [riskFilter, setRiskFilter] = useState<string>('');
   const [selectedMine, setSelectedMine] = useState<Mine | null>(MOCK_MINES[0]);
 
   const fetchMines = async () => {
     try {
       const res = await api.get('/mines', { timeout: 8000 });
-      if (res.data?.success && res.data?.data) {
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
         setMines(res.data.data);
         if (highlightMineId) {
           const found = res.data.data.find((m: Mine) => m.id === highlightMineId);
@@ -60,7 +61,20 @@ export const MineMap: React.FC = () => {
     fetchMines();
   }, []);
 
-  const filteredMines = riskFilter ? mines.filter(m => m.riskLevel === riskFilter) : mines;
+  const filteredMines = React.useMemo(() => {
+    return mines.filter(m => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const matchName = m.name?.toLowerCase().includes(q);
+        const matchCode = m.code?.toLowerCase().includes(q);
+        const matchState = m.state?.toLowerCase().includes(q);
+        const matchDistrict = m.district?.toLowerCase().includes(q);
+        if (!matchName && !matchCode && !matchState && !matchDistrict) return false;
+      }
+      if (riskFilter && m.riskLevel !== riskFilter) return false;
+      return true;
+    });
+  }, [mines, search, riskFilter]);
 
   return (
     <div className="space-y-4 pb-8">
@@ -90,16 +104,20 @@ export const MineMap: React.FC = () => {
         
         {/* Left Side: Colliery Quick Selector */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 flex flex-col h-full overflow-hidden">
-          <div className="mb-3">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-              Filter by Risk
-            </label>
+          <div className="mb-3 space-y-2">
+            <input
+              type="text"
+              placeholder="Search colliery, state..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:outline-none"
+            />
             <select
               value={riskFilter}
               onChange={(e) => setRiskFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none"
             >
-              <option value="">All Collieries ({mines.length})</option>
+              <option value="">All Collieries ({filteredMines.length})</option>
               <option value="CRITICAL">Critical Risk Only</option>
               <option value="HIGH">High Risk Only</option>
               <option value="MEDIUM">Medium Risk Only</option>

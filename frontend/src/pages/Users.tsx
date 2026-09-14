@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { User, UserRole, UserStatus, Mine } from '../types';
 import { DataTable, Column } from '../components/DataTable';
@@ -47,51 +47,54 @@ export const Users: React.FC = () => {
   const fetchAuxData = async () => {
     try {
       const res = await api.get('/mines', { timeout: 8000 });
-      if (res.data?.success) setMines(res.data.data);
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
+        setMines(res.data.data);
+      }
     } catch (e) {}
   };
 
   const fetchUsers = async () => {
     try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (roleFilter) params.append('role', roleFilter);
-      if (statusFilter) params.append('status', statusFilter);
-
-      const res = await api.get(`/users?${params.toString()}`, { timeout: 8000 });
-      if (res.data?.success && res.data?.data) {
+      const res = await api.get('/users', { timeout: 8000 });
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
         setUsers(res.data.data);
-        return;
       }
     } catch (err) {
       console.warn('Using pre-seeded official users directory');
     } finally {
       setIsLoading(false);
     }
-
-    // Client-side fallback filter
-    let filtered = [...MOCK_USERS];
-    if (roleFilter) filtered = filtered.filter(u => u.role === roleFilter);
-    if (statusFilter) filtered = filtered.filter(u => u.status === statusFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(u =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.department?.toLowerCase().includes(q) ||
-        u.phone?.toLowerCase().includes(q)
-      );
-    }
-    setUsers(filtered);
   };
 
   useEffect(() => {
     fetchAuxData();
+    fetchUsers();
   }, []);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [search, roleFilter, statusFilter]);
+  // Instantaneous 0ms client-side filter computation
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const matchName = u.name?.toLowerCase().includes(q);
+        const matchEmail = u.email?.toLowerCase().includes(q);
+        const matchDept = u.department?.toLowerCase().includes(q);
+        const matchPhone = u.phone?.toLowerCase().includes(q);
+        if (!matchName && !matchEmail && !matchDept && !matchPhone) {
+          return false;
+        }
+      }
+      if (roleFilter && u.role !== roleFilter) return false;
+      if (statusFilter && u.status !== statusFilter) return false;
+      return true;
+    });
+  }, [users, search, roleFilter, statusFilter]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setRoleFilter('');
+    setStatusFilter('');
+  };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,15 +215,27 @@ export const Users: React.FC = () => {
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Reset
+            Reset ({filteredUsers.length})
           </button>
+        )}
+      </div>
+
+      {/* Showing Count Information */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>
+          Showing <strong className="text-slate-800">{filteredUsers.length}</strong> of <strong className="text-slate-800">{users.length}</strong> official user accounts
+        </span>
+        {(search || roleFilter || statusFilter) && (
+          <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
+            Filtered View Active
+          </span>
         )}
       </div>
 
       {/* Table */}
       <DataTable
         columns={columns}
-        data={users}
+        data={filteredUsers}
         isLoading={isLoading}
       />
 

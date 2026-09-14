@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { ComplianceRecord, Mine, ComplianceRequirement } from '../types';
@@ -57,22 +57,19 @@ export const Compliance: React.FC = () => {
         api.get('/mines', { timeout: 8000 }),
         api.get('/compliance/requirements', { timeout: 8000 })
       ]);
-      if (minesRes.data?.success) setMines(minesRes.data.data);
-      if (reqsRes.data?.success) setRequirements(reqsRes.data.data);
+      if (minesRes.data?.success && minesRes.data?.data && minesRes.data.data.length > 0) {
+        setMines(minesRes.data.data);
+      }
+      if (reqsRes.data?.success && reqsRes.data?.data) {
+        setRequirements(reqsRes.data.data);
+      }
     } catch (e) {}
   };
 
   const fetchCompliance = async () => {
     try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (mineId) params.append('mineId', mineId);
-      if (category) params.append('category', category);
-      if (status) params.append('status', status);
-      if (riskLevel) params.append('riskLevel', riskLevel);
-
-      const res = await api.get(`/compliance?${params.toString()}`, { timeout: 8000 });
-      if (res.data?.success && res.data?.data) {
+      const res = await api.get('/compliance', { timeout: 8000 });
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
         setRecords(res.data.data);
       }
     } catch (err) {
@@ -84,11 +81,32 @@ export const Compliance: React.FC = () => {
 
   useEffect(() => {
     fetchAuxData();
+    fetchCompliance();
   }, []);
 
-  useEffect(() => {
-    fetchCompliance();
-  }, [search, mineId, category, status, riskLevel]);
+  // Instantaneous 0ms client-side filtering computation
+  const filteredRecords = useMemo(() => {
+    return records.filter((r) => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const matchTitle = r.requirement?.title?.toLowerCase().includes(q);
+        const matchClause = r.requirement?.clauseNumber?.toLowerCase().includes(q);
+        const matchAct = r.requirement?.act?.toLowerCase().includes(q);
+        const matchDesc = r.requirement?.description?.toLowerCase().includes(q);
+        const matchMine = r.mine?.name?.toLowerCase().includes(q);
+        const matchCode = r.mine?.code?.toLowerCase().includes(q);
+        const matchRemarks = r.remarks?.toLowerCase().includes(q);
+        if (!matchTitle && !matchClause && !matchAct && !matchDesc && !matchMine && !matchCode && !matchRemarks) {
+          return false;
+        }
+      }
+      if (mineId && r.mineId !== mineId && r.mine?.id !== mineId) return false;
+      if (category && r.requirement?.category !== category) return false;
+      if (status && r.status !== status) return false;
+      if (riskLevel && r.riskLevel !== riskLevel) return false;
+      return true;
+    });
+  }, [records, search, mineId, category, status, riskLevel]);
 
   const handleResetFilters = () => {
     setSearch('');
@@ -261,15 +279,27 @@ export const Compliance: React.FC = () => {
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Reset
+            Reset ({filteredRecords.length})
           </button>
+        )}
+      </div>
+
+      {/* Showing Count Information */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>
+          Showing <strong className="text-slate-800">{filteredRecords.length}</strong> of <strong className="text-slate-800">{records.length}</strong> statutory obligations
+        </span>
+        {(search || mineId || category || status || riskLevel) && (
+          <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
+            Filtered View Active
+          </span>
         )}
       </div>
 
       {/* Table */}
       <DataTable
         columns={columns}
-        data={records}
+        data={filteredRecords}
         isLoading={isLoading}
         onRowClick={(r) => navigate(`/compliance/${r.id}`)}
       />

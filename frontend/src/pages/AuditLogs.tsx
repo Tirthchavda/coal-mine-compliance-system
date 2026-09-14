@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { AuditLog } from '../types';
 import { DataTable, Column } from '../components/DataTable';
@@ -23,41 +23,40 @@ export const AuditLogs: React.FC = () => {
 
   const fetchAuditLogs = async () => {
     try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (entityFilter) params.append('entity', entityFilter);
-      if (actionFilter) params.append('action', actionFilter);
-
-      const res = await api.get(`/audit-logs?${params.toString()}`, { timeout: 8000 });
-      if (res.data?.success && res.data?.data) {
+      const res = await api.get('/audit-logs', { timeout: 8000 });
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
         setLogs(res.data.data);
-        return;
       }
     } catch (err) {
       console.warn('Using pre-seeded statutory audit trail records');
     } finally {
       setIsLoading(false);
     }
-
-    // Client-side fallback filter
-    let filtered = [...MOCK_AUDIT_LOGS];
-    if (entityFilter) filtered = filtered.filter(l => l.entity === entityFilter);
-    if (actionFilter) filtered = filtered.filter(l => l.action === actionFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(l =>
-        l.userName.toLowerCase().includes(q) ||
-        l.action.toLowerCase().includes(q) ||
-        l.entity.toLowerCase().includes(q) ||
-        l.entityId.toLowerCase().includes(q)
-      );
-    }
-    setLogs(filtered);
   };
 
   useEffect(() => {
     fetchAuditLogs();
-  }, [search, entityFilter, actionFilter]);
+  }, []);
+
+  // Instantaneous 0ms client-side filter computation
+  const filteredLogs = useMemo(() => {
+    return logs.filter((l) => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const matchUser = l.userName?.toLowerCase().includes(q);
+        const matchAction = l.action?.toLowerCase().includes(q);
+        const matchEntity = l.entity?.toLowerCase().includes(q);
+        const matchEntityId = l.entityId?.toLowerCase().includes(q);
+        const matchRole = l.userRole?.toLowerCase().includes(q);
+        if (!matchUser && !matchAction && !matchEntity && !matchEntityId && !matchRole) {
+          return false;
+        }
+      }
+      if (entityFilter && l.entity !== entityFilter) return false;
+      if (actionFilter && l.action !== actionFilter) return false;
+      return true;
+    });
+  }, [logs, search, entityFilter, actionFilter]);
 
   const columns: Column<AuditLog>[] = [
     {
@@ -153,15 +152,27 @@ export const AuditLogs: React.FC = () => {
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Reset
+            Reset ({filteredLogs.length})
           </button>
+        )}
+      </div>
+
+      {/* Showing Count Information */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>
+          Showing <strong className="text-slate-800">{filteredLogs.length}</strong> of <strong className="text-slate-800">{logs.length}</strong> immutable audit entries
+        </span>
+        {(search || entityFilter || actionFilter) && (
+          <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
+            Filtered View Active
+          </span>
         )}
       </div>
 
       {/* Table */}
       <DataTable
         columns={columns}
-        data={logs}
+        data={filteredLogs}
         isLoading={isLoading}
       />
     </div>

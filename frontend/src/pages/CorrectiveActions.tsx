@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { CorrectiveAction, Mine } from '../types';
@@ -50,53 +50,54 @@ export const CorrectiveActions: React.FC = () => {
   const fetchAuxData = async () => {
     try {
       const res = await api.get('/mines', { timeout: 8000 });
-      if (res.data?.success) setMines(res.data.data);
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
+        setMines(res.data.data);
+      }
     } catch (e) {}
   };
 
   const fetchActions = async () => {
     try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (mineId) params.append('mineId', mineId);
-      if (statusFilter) params.append('status', statusFilter);
-      if (overdueOnly) params.append('overdueOnly', overdueOnly);
-
-      const res = await api.get(`/actions?${params.toString()}`, { timeout: 8000 });
-      if (res.data?.success && res.data?.data) {
+      const res = await api.get('/actions', { timeout: 8000 });
+      if (res.data?.success && res.data?.data && res.data.data.length > 0) {
         setActions(res.data.data);
-        return;
       }
     } catch (err) {
       console.warn('Using pre-seeded statutory CAPA remediation records');
     } finally {
       setIsLoading(false);
     }
-
-    // Client-side fallback filter
-    let filtered = [...MOCK_ACTIONS];
-    if (mineId) filtered = filtered.filter(a => (a.mineId === mineId || a.mine?.id === mineId));
-    if (statusFilter) filtered = filtered.filter(a => a.status === statusFilter);
-    if (overdueOnly === 'true') filtered = filtered.filter(a => new Date(a.deadline) < new Date() && a.status !== 'COMPLETED' && a.status !== 'CLOSED');
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(a =>
-        a.title.toLowerCase().includes(q) ||
-        a.description.toLowerCase().includes(q) ||
-        a.mine?.name.toLowerCase().includes(q) ||
-        (typeof a.assignedTo === 'string' ? a.assignedTo : a.assignedTo?.name || '').toLowerCase().includes(q)
-      );
-    }
-    setActions(filtered);
   };
 
   useEffect(() => {
     fetchAuxData();
+    fetchActions();
   }, []);
 
-  useEffect(() => {
-    fetchActions();
-  }, [search, mineId, statusFilter, overdueOnly]);
+  // Instantaneous 0ms client-side filter computation
+  const filteredActions = useMemo(() => {
+    return actions.filter((a) => {
+      if (search) {
+        const q = search.toLowerCase().trim();
+        const assignedName = typeof a.assignedTo === 'string' ? a.assignedTo : a.assignedTo?.name || '';
+        const matchTitle = a.title?.toLowerCase().includes(q);
+        const matchDesc = a.description?.toLowerCase().includes(q);
+        const matchMine = a.mine?.name?.toLowerCase().includes(q);
+        const matchCode = a.mine?.code?.toLowerCase().includes(q);
+        const matchAssignee = assignedName.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchMine && !matchCode && !matchAssignee) {
+          return false;
+        }
+      }
+      if (mineId && a.mineId !== mineId && a.mine?.id !== mineId) return false;
+      if (statusFilter && a.status !== statusFilter) return false;
+      if (overdueOnly === 'true') {
+        const isOverdue = new Date(a.deadline) < new Date() && a.status !== 'COMPLETED' && a.status !== 'CLOSED';
+        if (!isOverdue) return false;
+      }
+      return true;
+    });
+  }, [actions, search, mineId, statusFilter, overdueOnly]);
 
   const handleUpdateProgress = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,15 +303,27 @@ export const CorrectiveActions: React.FC = () => {
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Reset
+            Reset ({filteredActions.length})
           </button>
+        )}
+      </div>
+
+      {/* Showing Count Information */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>
+          Showing <strong className="text-slate-800">{filteredActions.length}</strong> of <strong className="text-slate-800">{actions.length}</strong> CAPA remediation tasks
+        </span>
+        {(search || mineId || statusFilter || overdueOnly) && (
+          <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
+            Filtered View Active
+          </span>
         )}
       </div>
 
       {/* Table */}
       <DataTable
         columns={columns}
-        data={actions}
+        data={filteredActions}
         isLoading={isLoading}
       />
 
