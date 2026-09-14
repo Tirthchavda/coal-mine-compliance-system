@@ -406,8 +406,6 @@ export const Violations: React.FC = () => {
         <span>
           Showing <strong className="text-slate-800">{filteredViolations.length}</strong> of <strong className="text-slate-800">{violations.length}</strong> statutory violation notices
         </span>
-        {(search || mineId || severityFilter || statusFilter) && (
-          <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
         {(search || mineId || categoryFilter || severityFilter || statusFilter) && (
           <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
             Filtered View Active

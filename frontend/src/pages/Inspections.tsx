@@ -385,7 +385,6 @@ export const Inspections: React.FC = () => {
         <span>
           Showing <strong className="text-slate-800">{filteredInspections.length}</strong> of <strong className="text-slate-800">{inspections.length}</strong> statutory inspections
         </span>
-        {(search || mineId || statusFilter) && (
         {(search || mineId || typeFilter || statusFilter) && (
           <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
             Filtered View Active

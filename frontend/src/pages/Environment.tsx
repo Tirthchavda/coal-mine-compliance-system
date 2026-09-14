@@ -373,7 +373,6 @@ export const Environment: React.FC = () => {
         <span>
           Showing <strong className="text-slate-800">{filteredRecords.length}</strong> of <strong className="text-slate-800">{records.length}</strong> CPCB environmental logs
         </span>
-        {(search || mineId || stabilityFilter) && (
         {(search || mineId || stabilityFilter || statusFilter) && (
           <span className="text-gov-primary font-bold bg-gov-primary/10 px-2 py-0.5 rounded">
             Filtered View Active
