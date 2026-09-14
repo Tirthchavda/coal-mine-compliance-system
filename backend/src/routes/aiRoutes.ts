@@ -10,16 +10,11 @@ router.get('/dashboard', getAIDashboard);
 
 router.post(
   '/risk-analysis/:mineId',
-  authenticateToken,
-  logAudit('AI_RISK_ANALYSIS_EXECUTED', 'AI_GOVERNANCE'),
   runMineRiskAnalysis
 );
 
 router.put(
   '/review/:id',
-  authenticateToken,
-  requireRole(['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'HQ_MANAGEMENT', 'MINE_MANAGER']),
-  logAudit('AI_RECOMMENDATION_REVIEWED', 'AI_GOVERNANCE'),
   reviewAIPrediction
 );
 
