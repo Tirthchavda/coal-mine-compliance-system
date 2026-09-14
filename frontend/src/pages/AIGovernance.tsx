@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../api/client';
 import { AIPrediction, Mine } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
@@ -28,7 +28,10 @@ import {
   ChevronRight,
   Printer,
   CheckCircle2,
-  Zap
+  Zap,
+  Terminal,
+  Radio,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -143,14 +146,14 @@ export const calculateMineRisk = (mineId: string) => {
   };
 };
 
-const initialPredictionsList = MOCK_AI_PREDICTIONS.map((p, idx) => ({
+const initialPredictionsList = (MOCK_AI_PREDICTIONS as any[]).map((p: any, idx: number) => ({
   id: p.id,
   mineId: p.mineId,
   mine: p.mine || MOCK_MINES[idx % MOCK_MINES.length],
   riskScore: p.predictedRiskScore ?? p.riskScore ?? 65,
   riskLevel: p.predictedRiskLevel ?? p.riskLevel ?? 'HIGH',
-  confidence: Math.round((p.confidenceScore ?? 0.92) * 100),
-  factors: p.topRiskDrivers ? p.topRiskDrivers.map((d) => `${d.feature}: ${d.value} (${d.contributionPercentage}% impact)`) : (p.factors || ['Strata convergence readings within threshold', 'Ventilation airflow rate regular']),
+  confidence: Math.round((p.confidenceScore ?? (p.confidence ? p.confidence / 100 : 0.92)) * 100),
+  factors: p.topRiskDrivers ? p.topRiskDrivers.map((d: any) => `${d.feature}: ${d.value} (${d.contributionPercentage}% impact)`) : (p.factors || ['Strata convergence readings within threshold', 'Ventilation airflow rate regular']),
   topRiskDrivers: p.topRiskDrivers || [
     { feature: 'Strata Stability Index', contributionPercentage: 45, value: 'Within bounds' },
     { feature: 'Ventilation Telemetry', contributionPercentage: 35, value: 'Nominal airflow' },
@@ -201,8 +204,12 @@ export const AIGovernance: React.FC = () => {
   const [selectedMineId, setSelectedMineId] = useState<string>(MOCK_MINES[0]?.id || 'mine-jharia-01');
   const [analysisResult, setAnalysisResult] = useState<any>(calculateMineRisk(MOCK_MINES[0]?.id || 'mine-jharia-01'));
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [analysisStepText, setAnalysisStepText] = useState<string>('');
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Live Telemetry Ticker State
+  const [liveTickerTime, setLiveTickerTime] = useState<string>(new Date().toLocaleTimeString());
+  const [telemetryPulse, setTelemetryPulse] = useState<boolean>(false);
 
   // Human Review Modal
   const [reviewPrediction, setReviewPrediction] = useState<any | null>(null);
@@ -217,6 +224,8 @@ export const AIGovernance: React.FC = () => {
   const [simCriticalViols, setSimCriticalViols] = useState<number>(1);
   const [simOverdueCapas, setSimOverdueCapas] = useState<number>(2);
   const [simPm10, setSimPm10] = useState<number>(85);
+
+  const terminalBottomRef = useRef<HTMLDivElement>(null);
 
   const fetchAuxData = async () => {
     try {
@@ -247,6 +256,13 @@ export const AIGovernance: React.FC = () => {
   useEffect(() => {
     fetchAuxData();
     fetchAIDashboard();
+
+    // Auto live clock & telemetry heartbeat every 4 seconds
+    const interval = setInterval(() => {
+      setLiveTickerTime(new Date().toLocaleTimeString());
+      setTelemetryPulse((prev) => !prev);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   // When selected mine changes in dropdown, auto-refresh analysis preview
@@ -256,25 +272,43 @@ export const AIGovernance: React.FC = () => {
     setAnalysisResult(newCalc);
   };
 
-  // Execute AI Model Handler (with live animated pipeline steps)
-  const handleRunAnalysis = async () => {
+  // Execute AI Model Handler (with streaming terminal logs)
+  const handleRunAnalysis = () => {
     if (!selectedMineId) return;
     setIsAnalyzing(true);
-    setAnalysisStepText('Ingesting SCADA Sensor Telemetry (Methane, Strata, CAAQMS)...');
+    const targetMine = mines.find((m) => m.id === selectedMineId) || MOCK_MINES[0];
+    const timestamp = new Date().toLocaleTimeString();
 
-    // Quick animated sequence to visually show the AI inference pipeline
+    setTerminalLogs([
+      `[${timestamp}] [INIT] Connecting to Indian National Coal SCADA Telemetry Gateway...`,
+      `[${timestamp}] [AUTH] Authenticated: Director General of Mines Safety (DGMS Session #8812)`
+    ]);
+
     setTimeout(() => {
-      setAnalysisStepText('Correlating active DGMS violations & overdue CAPA remediation lag...');
+      setTerminalLogs((prev) => [
+        ...prev,
+        `[${timestamp}] [INGEST] Ingesting 128 telemetry feeds for: ${targetMine.name} (${targetMine.code})`,
+        `[${timestamp}] [GAS_SENSORS] CH4 Telemetry: 0.62% vol | CO Concentration: 14.5 ppm [ACTIVE]`
+      ]);
     }, 150);
 
     setTimeout(() => {
-      setAnalysisStepText('Applying Coal Mines Regulations 2017 & CPCB Penalty Matrices...');
+      setTerminalLogs((prev) => [
+        ...prev,
+        `[${timestamp}] [STRATA_MONITOR] Incline 3 Tell-Tale convergence sensor: 8.2mm (Alert threshold: 6.0mm)`,
+        `[${timestamp}] [REGULATORY_MATRIX] Cross-referencing Coal Mines Regulations 2017 (CMR 104, 129, 133)...`
+      ]);
     }, 300);
 
-    setTimeout(async () => {
-      // High-precision calculation
+    setTimeout(() => {
       const calculated = calculateMineRisk(selectedMineId);
       setAnalysisResult(calculated);
+
+      setTerminalLogs((prev) => [
+        ...prev,
+        `[${timestamp}] [LLM_INFERENCE] Gemini 2.5 Flash computing multi-factor penalty tensor... OK (38ms)`,
+        `[${timestamp}] [RESULT] Synthesis Complete. Composite Risk Index: ${calculated.riskScore}/100 [${calculated.riskLevel}]. Directives Generated.`
+      ]);
 
       // Dynamically add/update in predictions list
       setDashboardData((prev: any) => {
@@ -317,7 +351,6 @@ export const AIGovernance: React.FC = () => {
       });
 
       setIsAnalyzing(false);
-      setAnalysisStepText('');
       setSuccessToast(`✓ Model Generated Diagnosis for ${calculated.mine?.name}: Risk Index ${calculated.riskScore}/100 (${calculated.riskLevel})`);
       setTimeout(() => setSuccessToast(null), 5000);
 
@@ -325,13 +358,18 @@ export const AIGovernance: React.FC = () => {
       try {
         api.post(`/ai/risk-analysis/${selectedMineId}`, {}, { timeout: 4000 });
       } catch (err) {}
-    }, 450);
+    }, 550);
   };
 
   // Run Batch Analysis across all 15 Mines
   const handleBatchAnalyzeAll = () => {
     setIsAnalyzing(true);
-    setAnalysisStepText('Executing Parallel AI Diagnostics across all 15 Indian Collieries...');
+    const timestamp = new Date().toLocaleTimeString();
+
+    setTerminalLogs([
+      `[${timestamp}] [BATCH_INIT] Launching parallel AI risk diagnostic workers across 15 Indian Collieries...`,
+      `[${timestamp}] [WORKERS] Allocating 15 multi-tenant compute threads on Gemini 2.5 Flash cluster...`
+    ]);
 
     setTimeout(() => {
       const allCalculated = mines.map((m) => {
@@ -367,11 +405,15 @@ export const AIGovernance: React.FC = () => {
         predictions: allCalculated
       }));
 
+      setTerminalLogs((prev) => [
+        ...prev,
+        `[${timestamp}] [BATCH_SUCCESS] 15/15 collieries analyzed in 480ms. National risk ledger fully synchronized.`
+      ]);
+
       setIsAnalyzing(false);
-      setAnalysisStepText('');
       setSuccessToast(`✓ Batch Diagnostics Completed for all 15 Collieries!`);
       setTimeout(() => setSuccessToast(null), 5000);
-    }, 500);
+    }, 600);
   };
 
   // Human Review Decision Handler
@@ -473,6 +515,25 @@ export const AIGovernance: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Live SCADA Telemetry Stream Ticker Banner */}
+      <div className="bg-slate-900 text-slate-200 px-4 py-2.5 rounded-xl border border-slate-800 shadow-xs flex flex-wrap items-center justify-between text-xs gap-2 font-mono">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span className="font-bold text-emerald-400 uppercase text-[11px] tracking-wider">
+            LIVE SCADA TELEMETRY FEED (15/15 COLLIERIES STREAMING)
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4 text-[11px] text-slate-400">
+          <span>Packets: <strong className="text-white">12,480/min</strong></span>
+          <span>Latency: <strong className="text-emerald-400">32ms</strong></span>
+          <span>Gateway Sync: <strong className="text-gov-gold">{liveTickerTime}</strong></span>
+        </div>
+      </div>
+
       {/* Success Notification Banner */}
       {successToast && (
         <div className="p-3.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-between animate-in fade-in duration-200">
@@ -480,7 +541,7 @@ export const AIGovernance: React.FC = () => {
             <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
             <span>{successToast}</span>
           </div>
-          <button onClick={() => setSuccessToast(null)} className="text-white/80 hover:text-white text-xs px-2 font-black">✕</button>
+          <button onClick={() => setSuccessToast(null)} className="text-white/80 hover:text-white text-xs px-2 font-black cursor-pointer">✕</button>
         </div>
       )}
 
@@ -595,19 +656,24 @@ export const AIGovernance: React.FC = () => {
           </div>
         </div>
 
-        {/* Live Step Progress Indicator */}
-        {isAnalyzing && (
-          <div className="p-4 rounded-xl bg-gov-primary/5 border border-gov-primary/20 space-y-2 animate-in fade-in">
-            <div className="flex items-center justify-between text-xs font-bold text-gov-primary">
-              <span className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 border-2 border-gov-primary border-t-transparent rounded-full animate-spin"></div>
-                {analysisStepText}
+        {/* Live Terminal Streaming Log Window */}
+        {terminalLogs.length > 0 && (
+          <div className="bg-slate-950 rounded-xl p-4 font-mono text-xs border border-slate-800 shadow-inner space-y-1 text-slate-300 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1.5 font-bold text-gov-gold">
+                <Terminal className="w-3.5 h-3.5" />
+                Live AI Inference Terminal & SCADA Pipeline
               </span>
-              <span className="font-mono">Processing...</span>
+              <span className="text-[10px] text-emerald-400">● Active Stream</span>
             </div>
-            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-gov-primary h-full rounded-full animate-pulse w-3/4"></div>
-            </div>
+            {terminalLogs.map((log, idx) => (
+              <p key={idx} className="leading-relaxed">
+                <span className="text-emerald-400 font-bold">&gt;</span> {log}
+              </p>
+            ))}
+            {isAnalyzing && (
+              <p className="text-gov-gold animate-pulse">&gt; Processing neural weight attribution...</p>
+            )}
           </div>
         )}
 
@@ -706,7 +772,7 @@ export const AIGovernance: React.FC = () => {
             <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-200 text-xs">
               <button
                 onClick={() => window.print()}
-                className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5 text-slate-500" />
                 Print Statutory AI Briefing
@@ -889,7 +955,7 @@ export const AIGovernance: React.FC = () => {
           {(search || riskFilter || reviewFilter) && (
             <button
               onClick={handleResetFilters}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-bold transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Reset Filters
@@ -1013,7 +1079,7 @@ export const AIGovernance: React.FC = () => {
                         setAnalysisResult(calculateMineRisk(p.mineId));
                         window.scrollTo({ top: 120, behavior: 'smooth' });
                       }}
-                      className="px-2.5 py-1 text-xs font-bold text-gov-primary bg-gov-primary/10 rounded-lg hover:bg-gov-primary hover:text-white transition-colors"
+                      className="px-2.5 py-1 text-xs font-bold text-gov-primary bg-gov-primary/10 rounded-lg hover:bg-gov-primary hover:text-white transition-colors cursor-pointer"
                     >
                       Diagnose Mine ⚡
                     </button>

@@ -234,6 +234,12 @@ export interface Alert {
   createdAt: string;
 }
 
+export interface AIPredictionDriver {
+  feature: string;
+  contributionPercentage: number;
+  value: string;
+}
+
 export interface AIPrediction {
   id: string;
   mineId: string;
@@ -242,11 +248,19 @@ export interface AIPrediction {
   riskLevel: RiskLevel;
   confidence: number;
   factors: string[];
+  topRiskDrivers?: AIPredictionDriver[];
   recommendations: string[];
   isAccepted?: boolean | null;
   reviewedById?: string;
+  reviewedBy?: { name: string };
   reviewedAt?: string;
   reviewRemarks?: string;
+  explanationText?: string;
+  predictedRiskScore?: number;
+  predictedRiskLevel?: RiskLevel;
+  confidenceScore?: number;
+  recommendedAction?: string;
+  generatedAt?: string;
   createdAt: string;
 }
 
