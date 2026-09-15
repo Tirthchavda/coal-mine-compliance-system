@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api } from '../api/client';
 import { UserRole, Alert } from '../types';
 import {
@@ -13,7 +14,9 @@ import {
   ExternalLink,
   CheckCircle,
   AlertTriangle,
-  Menu
+  Menu,
+  Globe,
+  Languages
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,6 +26,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logout, switchRole } = useAuth();
+  const { language, setLanguage, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -30,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const [showAlertsDropdown, setShowAlertsDropdown] = useState<boolean>(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState<boolean>(false);
   const [showUserDropdown, setShowUserDropdown] = useState<boolean>(false);
+  const [showLangDropdown, setShowLangDropdown] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const fetchAlerts = async () => {
@@ -68,13 +73,13 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     }
   };
 
-  const roles: { role: UserRole; label: string; desc: string; color: string }[] = [
-    { role: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Ministry of Coal Central IT Cell', color: 'text-purple-700 bg-purple-50' },
-    { role: 'HQ_MANAGEMENT', label: 'HQ Management', desc: 'Coal India Strategic Executive', color: 'text-blue-700 bg-blue-50' },
-    { role: 'MINE_MANAGER', label: 'Mine Manager', desc: 'Jharia Colliery Project Incharge', color: 'text-emerald-700 bg-emerald-50' },
-    { role: 'SAFETY_INSPECTOR', label: 'Safety Inspector', desc: 'DGMS Statutory Inspectorate', color: 'text-rose-700 bg-rose-50' },
-    { role: 'COMPLIANCE_OFFICER', label: 'Compliance Officer', desc: 'Raniganj Statutory Environmental Wing', color: 'text-amber-700 bg-amber-50' },
-    { role: 'CONTRACTOR', label: 'Mining Contractor', desc: 'Heavy Equipment & Operations Partner', color: 'text-slate-700 bg-slate-100' }
+  const roles: { role: UserRole; labelKey: string; color: string }[] = [
+    { role: 'SUPER_ADMIN', labelKey: 'role.SUPER_ADMIN', color: 'text-purple-700 bg-purple-50' },
+    { role: 'HQ_MANAGEMENT', labelKey: 'role.HQ_MANAGEMENT', color: 'text-blue-700 bg-blue-50' },
+    { role: 'MINE_MANAGER', labelKey: 'role.MINE_MANAGER', color: 'text-emerald-700 bg-emerald-50' },
+    { role: 'SAFETY_INSPECTOR', labelKey: 'role.SAFETY_INSPECTOR', color: 'text-rose-700 bg-rose-50' },
+    { role: 'COMPLIANCE_OFFICER', labelKey: 'role.COMPLIANCE_OFFICER', color: 'text-amber-700 bg-amber-50' },
+    { role: 'CONTRACTOR', labelKey: 'role.CONTRACTOR', color: 'text-slate-700 bg-slate-100' }
   ];
 
   return (
@@ -89,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           <div className="flex items-center gap-3">
             <button
               onClick={onToggleSidebar}
-              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -101,15 +106,15 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               </div>
               <div className="hidden sm:block">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-sm font-extrabold text-gov-dark tracking-tight leading-none uppercase">
-                    GOVERNMENT OF INDIA • MINISTRY OF COAL
+                  <h1 className="text-xs lg:text-sm font-extrabold text-gov-dark tracking-tight leading-none uppercase">
+                    {t('header.portalSubtitle', 'GOVERNMENT OF INDIA • MINISTRY OF COAL')}
                   </h1>
                   <span className="bg-gov-gold/20 text-gov-gold text-[10px] font-bold px-1.5 py-0.5 rounded border border-gov-gold/30">
                     DGMS PORTAL
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium">
-                  Coal Mine Statutory Compliance & Governance Monitoring System
+                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                  {t('header.portalTitle', 'Coal Mine Statutory Compliance & Governance Monitoring System')}
                 </p>
               </div>
             </div>
@@ -120,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             <form onSubmit={handleSearchSubmit} className="w-full relative">
               <input
                 type="text"
-                placeholder="Search mines, statutory rules, violations, CMR 2017 clauses..."
+                placeholder={t('header.searchPlaceholder', 'Search statutory regulations, mines, alerts...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gov-primary focus:bg-white transition-all text-slate-900"
@@ -129,14 +134,67 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             </form>
           </div>
 
-          {/* Right: Quick Role Switcher + Alerts + User Profile */}
+          {/* Right: Language Switcher + Quick Role Switcher + Alerts + User Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
             
+            {/* 🌐 Language Switcher Button (English / हिन्दी) */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowLangDropdown(!showLangDropdown);
+                  setShowAlertsDropdown(false);
+                  setShowUserDropdown(false);
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg transition-all shadow-xs cursor-pointer"
+                title="Change Site Language / भाषा बदलें"
+              >
+                <Languages className="w-4 h-4 text-gov-primary" />
+                <span className="font-extrabold">{language === 'hi' ? '🇮🇳 हिन्दी' : '🇬🇧 English'}</span>
+                <ChevronDown className="w-3 h-3 text-slate-500" />
+              </button>
+
+              {showLangDropdown && (
+                <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in duration-150">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
+                    Select Language / भाषा चुनें
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setLanguage('en');
+                      setShowLangDropdown(false);
+                    }}
+                    className={`w-full px-3.5 py-2 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                      language === 'en' ? 'bg-gov-primary/10 text-gov-primary' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">🇬🇧 English</span>
+                    {language === 'en' && <CheckCircle className="w-3.5 h-3.5 text-gov-primary" />}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setLanguage('hi');
+                      setShowLangDropdown(false);
+                    }}
+                    className={`w-full px-3.5 py-2 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                      language === 'hi' ? 'bg-gov-primary/10 text-gov-primary' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">🇮🇳 हिन्दी (Hindi)</span>
+                    {language === 'hi' && <CheckCircle className="w-3.5 h-3.5 text-gov-primary" />}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Official Role Badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gov-primary/10 text-gov-primary border border-gov-primary/30 rounded-lg">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gov-primary/10 text-gov-primary border border-gov-primary/30 rounded-lg">
               <Shield className="w-3.5 h-3.5 text-gov-gold" />
-              <span className="hidden sm:inline text-slate-500 font-medium">Role:</span>
-              <span className="font-extrabold text-gov-primary">{user?.role?.replace(/_/g, ' ')}</span>
+              <span className="hidden lg:inline text-slate-500 font-medium">{t('header.activeRole', 'Role')}:</span>
+              <span className="font-extrabold text-gov-primary">
+                {t(`role.${user?.role}` as string, user?.role?.replace(/_/g, ' ') || 'Officer')}
+              </span>
             </div>
 
             {/* Notification Bell */}
@@ -144,11 +202,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               <button
                 onClick={() => {
                   setShowAlertsDropdown(!showAlertsDropdown);
-                  setShowRoleDropdown(false);
+                  setShowLangDropdown(false);
                   setShowUserDropdown(false);
                 }}
-                className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                title="Statutory Alerts & Notifications"
+                className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
+                title={t('header.notifications', 'Statutory Alerts & Notifications')}
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -163,10 +221,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                   <div className="px-4 py-3 bg-gov-dark text-white flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-gov-gold" />
-                      <h3 className="text-xs font-bold uppercase tracking-wider">Statutory Escalations & Alerts</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider">{t('header.notifications', 'Statutory Alerts')}</h3>
                     </div>
                     <span className="text-[10px] bg-rose-600 text-white font-bold px-2 py-0.5 rounded-full">
-                      {unreadCount} Unread
+                      {unreadCount} {t('status.PENDING', 'Unread')}
                     </span>
                   </div>
 
@@ -174,7 +232,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                     {alerts.length === 0 ? (
                       <div className="p-6 text-center text-xs text-slate-500">
                         <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                        No active statutory alerts at this time.
+                        {t('header.noAlerts', 'No active statutory alerts at this time.')}
                       </div>
                     ) : (
                       alerts.map((a) => (
@@ -189,13 +247,13 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                             <span
                               className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                                 a.severity === 'CRITICAL'
-                                  ? 'bg-rose-100 text-rose-700'
-                                  : a.severity === 'HIGH'
-                                  ? 'bg-orange-100 text-orange-700'
-                                  : 'bg-sky-100 text-sky-700'
+                                    ? 'bg-rose-100 text-rose-700'
+                                    : a.severity === 'HIGH'
+                                    ? 'bg-orange-100 text-orange-700'
+                                    : 'bg-sky-100 text-sky-700'
                               }`}
                             >
-                              {a.severity}
+                              {t(`risk.${a.severity}` as string, a.severity)}
                             </span>
                             <span className="text-[10px] text-slate-400">
                               {new Date(a.createdAt).toLocaleDateString()}
@@ -216,10 +274,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               <button
                 onClick={() => {
                   setShowUserDropdown(!showUserDropdown);
-                  setShowRoleDropdown(false);
+                  setShowLangDropdown(false);
                   setShowAlertsDropdown(false);
                 }}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-full bg-gov-secondary text-white font-bold text-xs flex items-center justify-center border border-slate-300">
                   {user?.name ? user.name.charAt(0) : 'U'}
@@ -238,7 +296,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                     <p className="text-[11px] text-slate-500">{user?.email}</p>
                     <div className="mt-1">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gov-primary/10 text-gov-primary">
-                        {user?.role?.replace(/_/g, ' ')}
+                        {t(`role.${user?.role}` as string, user?.role?.replace(/_/g, ' ') || 'Officer')}
                       </span>
                     </div>
                   </div>
@@ -249,20 +307,20 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                         setShowUserDropdown(false);
                         navigate('/dashboard');
                       }}
-                      className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                     >
                       <Shield className="w-4 h-4 text-slate-400" />
-                      Statutory Dashboard
+                      {t('nav.dashboard', 'Statutory Dashboard')}
                     </button>
                     <button
                       onClick={() => {
                         setShowUserDropdown(false);
                         navigate('/users');
                       }}
-                      className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                     >
                       <User className="w-4 h-4 text-slate-400" />
-                      User & Access Directory
+                      {t('nav.users', 'User & Access Directory')}
                     </button>
                   </div>
 
@@ -273,10 +331,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                         logout();
                         navigate('/login');
                       }}
-                      className="w-full px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-bold"
+                      className="w-full px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-bold cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
-                      Sign Out
+                      {t('header.logout', 'Sign Out')}
                     </button>
                   </div>
                 </div>
@@ -290,4 +348,3 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     </header>
   );
 };
-

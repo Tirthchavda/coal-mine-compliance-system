@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { UserRole } from '../types';
 import {
   LayoutDashboard,
@@ -28,7 +29,8 @@ interface SidebarProps {
 
 interface NavItem {
   to: string;
-  label: string;
+  labelKey: string;
+  defaultLabel: string;
   icon: React.ElementType;
   badge: string | null;
   roles: UserRole[];
@@ -36,109 +38,125 @@ interface NavItem {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const allNavItems: NavItem[] = [
     {
       to: '/dashboard',
-      label: 'Dashboard',
+      labelKey: 'nav.dashboard',
+      defaultLabel: 'Dashboard',
       icon: LayoutDashboard,
       badge: null,
       roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER', 'CONTRACTOR']
     },
     {
       to: '/mines',
-      label: 'Mines Directory',
+      labelKey: 'nav.mines',
+      defaultLabel: 'Mines Directory',
       icon: Mountain,
       badge: '12',
       roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']
     },
     {
       to: '/map',
-      label: 'Interactive GIS Map',
+      labelKey: 'nav.map',
+      defaultLabel: 'Interactive GIS Map',
       icon: MapPin,
       badge: 'GIS',
       roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']
     },
     {
       to: '/compliance',
-      label: 'Statutory Compliance',
+      labelKey: 'nav.compliance',
+      defaultLabel: 'Statutory Compliance',
       icon: ShieldCheck,
       badge: null,
       roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']
     },
     {
       to: '/inspections',
-      label: 'DGMS Inspections',
+      labelKey: 'nav.inspections',
+      defaultLabel: 'DGMS Inspections',
       icon: ClipboardCheck,
       badge: null,
       roles: ['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'HQ_MANAGEMENT', 'MINE_MANAGER']
     },
     {
       to: '/violations',
-      label: 'Violations Tracker',
+      labelKey: 'nav.violations',
+      defaultLabel: 'Violations Tracker',
       icon: AlertOctagon,
       badge: 'Live',
       roles: ['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'HQ_MANAGEMENT', 'COMPLIANCE_OFFICER']
     },
     {
       to: '/actions',
-      label: 'Corrective Actions (CAPA)',
+      labelKey: 'nav.actions',
+      defaultLabel: 'Corrective Actions (CAPA)',
       icon: CheckSquare,
       badge: null,
       roles: ['SUPER_ADMIN', 'MINE_MANAGER', 'CONTRACTOR', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']
     },
     {
       to: '/documents',
-      label: 'Document Vault',
+      labelKey: 'nav.documents',
+      defaultLabel: 'Document Vault',
       icon: FileText,
       badge: 'Vault',
       roles: ['SUPER_ADMIN', 'COMPLIANCE_OFFICER', 'MINE_MANAGER', 'HQ_MANAGEMENT', 'SAFETY_INSPECTOR', 'CONTRACTOR']
     },
     {
       to: '/safety',
-      label: 'Safety Governance',
+      labelKey: 'nav.safety',
+      defaultLabel: 'Safety Governance',
       icon: HeartPulse,
       badge: null,
       roles: ['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'CONTRACTOR']
     },
     {
       to: '/environment',
-      label: 'Environmental Monitor',
+      labelKey: 'nav.environment',
+      defaultLabel: 'Environmental Quality',
       icon: Leaf,
       badge: null,
       roles: ['SUPER_ADMIN', 'COMPLIANCE_OFFICER', 'MINE_MANAGER', 'HQ_MANAGEMENT']
     },
     {
       to: '/ai-governance',
-      label: 'AI Risk & Explainability',
+      labelKey: 'nav.aiGovernance',
+      defaultLabel: 'AI Risk & Explainability',
       icon: Sparkles,
       badge: 'AI',
       roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'SAFETY_INSPECTOR', 'MINE_MANAGER']
     },
     {
       to: '/analytics',
-      label: 'Executive Analytics',
+      labelKey: 'nav.analytics',
+      defaultLabel: 'National Analytics',
       icon: BarChart3,
       badge: null,
       roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER']
     },
     {
       to: '/reports',
-      label: 'Statutory Reports',
+      labelKey: 'nav.reports',
+      defaultLabel: 'Statutory Reports',
       icon: FileSpreadsheet,
       badge: 'Export',
       roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_INSPECTOR']
     },
     {
       to: '/users',
-      label: 'User & Role Directory',
+      labelKey: 'nav.users',
+      defaultLabel: 'Official Directory',
       icon: Users,
       badge: null,
       roles: ['SUPER_ADMIN']
     },
     {
       to: '/audit-logs',
-      label: 'Immutable Audit Trail',
+      labelKey: 'nav.auditLogs',
+      defaultLabel: 'System Audit Trail',
       icon: History,
       badge: 'Audit',
       roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT']
@@ -153,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm transition-opacity cursor-pointer"
         />
       )}
 
@@ -180,7 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Scrollable Navigation Links */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <div className="px-3 pb-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
-            {user?.role?.replace(/_/g, ' ')} SCOPE ({visibleNavItems.length} MODULES)
+            {t(`role.${user?.role}` as string, user?.role?.replace(/_/g, ' ') || 'OFFICER')} ({visibleNavItems.length})
           </div>
 
           {visibleNavItems.map((item) => {
@@ -200,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               >
                 <div className="flex items-center gap-3">
                   <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey, item.defaultLabel)}</span>
                 </div>
 
                 {item.badge && (
@@ -226,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="flex items-center gap-1 font-semibold text-slate-300">
               <ShieldAlert className="w-3.5 h-3.5 text-gov-gold" />
-              Active Session
+              {t('header.activeRole', 'Active Session')}
             </span>
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
           </div>
@@ -235,7 +253,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </p>
           <div className="mt-1">
             <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-gov-primary/30 text-gov-gold border border-gov-gold/30">
-              {user?.role?.replace(/_/g, ' ')}
+              {t(`role.${user?.role}` as string, user?.role?.replace(/_/g, ' ') || 'Officer')}
             </span>
           </div>
         </div>

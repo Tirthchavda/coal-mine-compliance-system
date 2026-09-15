@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface StatusBadgeProps {
   status: string;
@@ -7,6 +8,7 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'status', className = '' }) => {
+  const { t } = useLanguage();
   const norm = (status || '').toUpperCase();
 
   let bg = 'bg-slate-100 text-slate-700 border-slate-200';
@@ -29,17 +31,24 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'status
     dot = 'bg-sky-500';
   }
 
-  const formatText = (text: string) => {
-    return text.replace(/_/g, ' ');
+  const getTranslatedLabel = () => {
+    if (type === 'risk' || norm === 'CRITICAL' || norm === 'HIGH' || norm === 'MEDIUM' || norm === 'LOW') {
+      const riskKey = `risk.${norm}`;
+      const translated = t(riskKey, '');
+      if (translated) return translated;
+    }
+    const statusKey = `status.${norm}`;
+    return t(statusKey, norm.replace(/_/g, ' '));
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${bg} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${bg} ${className}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${dot}`}></span>
-      {formatText(norm)}
+      {getTranslatedLabel()}
     </span>
   );
 };
 
+export default StatusBadge;

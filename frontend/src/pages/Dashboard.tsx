@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
+import { useLanguage } from '../context/LanguageContext';
 import {
   Mountain,
   ShieldCheck,
@@ -94,6 +95,7 @@ const DEFAULT_DASHBOARD_DATA = {
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
+  const { t } = useLanguage();
   const [data, setData] = useState<any>(DEFAULT_DASHBOARD_DATA);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -129,7 +131,7 @@ export const Dashboard: React.FC = () => {
   const severityPieData = [
     {
       name: 'CRITICAL',
-      label: 'Critical Priority',
+      label: t('risk.CRITICAL', 'Critical Priority'),
       value: criticalCount,
       percent: Math.round((criticalCount / totalViolationsCount) * 100),
       color: '#e11d48',
@@ -141,7 +143,7 @@ export const Dashboard: React.FC = () => {
     },
     {
       name: 'HIGH',
-      label: 'High Priority',
+      label: t('risk.HIGH', 'High Priority'),
       value: highCount,
       percent: Math.round((highCount / totalViolationsCount) * 100),
       color: '#ea580c',
@@ -153,7 +155,7 @@ export const Dashboard: React.FC = () => {
     },
     {
       name: 'MEDIUM',
-      label: 'Medium Risk',
+      label: t('risk.MEDIUM', 'Medium Risk'),
       value: mediumCount,
       percent: Math.round((mediumCount / totalViolationsCount) * 100),
       color: '#d97706',
@@ -165,7 +167,7 @@ export const Dashboard: React.FC = () => {
     },
     {
       name: 'LOW',
-      label: 'Low Advisory',
+      label: t('risk.LOW', 'Low Advisory'),
       value: lowCount,
       percent: Math.round((lowCount / totalViolationsCount) * 100),
       color: '#16a34a',
@@ -184,37 +186,15 @@ export const Dashboard: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-black uppercase tracking-widest text-gov-gold bg-gov-gold/10 px-2 py-0.5 rounded border border-gov-gold/30">
-              {user?.role === 'SAFETY_INSPECTOR'
-                ? 'DGMS SAFETY INSPECTION WING'
-                : user?.role === 'MINE_MANAGER'
-                ? 'COLLIERY OPERATIONAL MANAGEMENT'
-                : user?.role === 'COMPLIANCE_OFFICER'
-                ? 'STATUTORY COMPLIANCE & CLEARANCES'
-                : user?.role === 'CONTRACTOR'
-                ? 'FIELD CONTRACTOR & REMEDIATION PORTAL'
-                : 'NATIONAL STATUTORY EXECUTIVE OVERVIEW'}
+              {t(`role.${user?.role}` as string, user?.role?.replace(/_/g, ' ') || 'STATUTORY OVERVIEW')}
             </span>
             <span className="text-xs text-slate-300">• {user?.name || 'Officer'}</span>
           </div>
           <h1 className="text-2xl font-black tracking-tight">
-            {user?.role === 'SAFETY_INSPECTOR'
-              ? 'DGMS Statutory Safety & Audit Dashboard'
-              : user?.role === 'MINE_MANAGER'
-              ? 'Colliery Operations & Compliance Portal'
-              : user?.role === 'CONTRACTOR'
-              ? 'Assigned Corrective Actions & Safety Telemetry'
-              : user?.role === 'COMPLIANCE_OFFICER'
-              ? 'Statutory Returns & Clearance Vault'
-              : 'Coal Mine Statutory Compliance & Governance Dashboard'}
+            {t('header.portalTitle', 'Coal Mine Statutory Compliance & Governance Dashboard')}
           </h1>
           <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-            {user?.role === 'SAFETY_INSPECTOR'
-              ? 'Manage routine and surprise DGMS inspections, issue statutory non-compliance notices, and verify physical site remediations.'
-              : user?.role === 'MINE_MANAGER'
-              ? 'Monitor operational safety, environmental telemetry (PM10, water pH), and execute corrective actions for your colliery.'
-              : user?.role === 'CONTRACTOR'
-              ? 'Track assigned engineering milestones, upload progress proof, and monitor heavy equipment safety adherence.'
-              : 'Real-time multi-tier statutory oversight across 12 high-capacity Indian coal collieries under the Mines Act 1952, CMR 2017, and CPCB environmental guidelines.'}
+            {t('header.portalSubtitle', 'Real-time multi-tier statutory oversight across Indian coal collieries under the Mines Act 1952, CMR 2017, and CPCB guidelines.')}
           </p>
         </div>
 
@@ -223,50 +203,50 @@ export const Dashboard: React.FC = () => {
           {hasRole(['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'HQ_MANAGEMENT']) && (
             <button
               onClick={() => navigate('/inspections?new=true')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-gov-gold text-slate-950 rounded-lg hover:bg-amber-400 transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-gov-gold text-slate-950 rounded-lg hover:bg-amber-400 transition-colors shadow-sm cursor-pointer"
             >
               <ClipboardList className="w-4 h-4" />
-              Schedule Audit
+              {t('btn.scheduleAudit', 'Schedule Audit')}
             </button>
           )}
 
           {hasRole(['SUPER_ADMIN', 'SAFETY_INSPECTOR']) && (
             <button
               onClick={() => navigate('/violations?new=true')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm cursor-pointer"
             >
               <AlertOctagon className="w-4 h-4" />
-              Issue Violation Notice
+              {t('btn.issueNotice', 'Issue Violation Notice')}
             </button>
           )}
 
           {hasRole(['MINE_MANAGER', 'COMPLIANCE_OFFICER']) && (
             <button
               onClick={() => navigate('/documents')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-gov-gold text-slate-950 rounded-lg hover:bg-amber-400 transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-gov-gold text-slate-950 rounded-lg hover:bg-amber-400 transition-colors shadow-sm cursor-pointer"
             >
               <UploadCloud className="w-4 h-4" />
-              Upload Clearance
+              {t('btn.uploadDoc', 'Upload Clearance')}
             </button>
           )}
 
           {hasRole(['CONTRACTOR', 'MINE_MANAGER']) && (
             <button
               onClick={() => navigate('/actions')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer"
             >
               <CheckSquare className="w-4 h-4" />
-              Assigned CAPA Tasks
+              {t('btn.assignCapa', 'Assigned CAPA Tasks')}
             </button>
           )}
 
           {hasRole(['SUPER_ADMIN', 'HQ_MANAGEMENT']) && (
             <button
               onClick={() => navigate('/ai-governance')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors backdrop-blur-xs"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors backdrop-blur-xs cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-gov-gold" />
-              AI Risk Engine
+              {t('btn.aiRiskEngine', 'AI Risk Engine')}
             </button>
           )}
         </div>
@@ -275,32 +255,32 @@ export const Dashboard: React.FC = () => {
       {/* Primary KPI Scorecards (Real DB Data) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Collieries"
-          value={kpis?.totalMines ?? 12}
-          subtitle={`${kpis?.compliantMines ?? 7} Compliant • ${kpis?.atRiskMines ?? 3} At Risk • ${kpis?.criticalMines ?? 2} Critical`}
+          title={t('dash.totalMines', 'Total Collieries')}
+          value={kpis?.totalMines ?? 15}
+          subtitle={`${kpis?.compliantMines ?? 10} Compliant • ${kpis?.atRiskMines ?? 3} At Risk • ${kpis?.criticalMines ?? 2} Critical`}
           icon={Mountain}
           variant="info"
           onClick={() => navigate('/mines')}
         />
         <StatCard
-          title="Critical Violations"
-          value={kpis?.criticalViolations ?? 3}
-          subtitle={`${kpis?.activeViolations ?? 14} Total Active Violations`}
+          title={t('dash.criticalViolations', 'Critical Violations')}
+          value={kpis?.criticalViolations ?? 4}
+          subtitle={`${kpis?.activeViolations ?? 15} Total Active Violations`}
           icon={AlertOctagon}
           variant="danger"
           onClick={() => navigate('/violations?severity=CRITICAL')}
         />
         <StatCard
-          title="Overdue CAPAs"
-          value={kpis?.overdueActions ?? 4}
-          subtitle={`${kpis?.pendingActions ?? 11} Remediation Actions Pending`}
+          title={t('dash.overdueCapas', 'Overdue CAPAs')}
+          value={kpis?.overdueActions ?? 3}
+          subtitle={`${kpis?.pendingActions ?? 12} Remediation Actions Pending`}
           icon={Clock}
           variant="warning"
           onClick={() => navigate('/actions?overdueOnly=true')}
         />
         <StatCard
-          title="National Compliance Index"
-          value={`${kpis?.avgComplianceScore ?? 84.5}%`}
+          title={t('dash.complianceIndex', 'National Compliance Index')}
+          value={`${kpis?.avgComplianceScore ?? 86.4}%`}
           subtitle="Statutory target >= 85.0%"
           icon={Award}
           variant="success"
@@ -316,8 +296,8 @@ export const Dashboard: React.FC = () => {
             <Clock className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-slate-400 font-semibold text-[10px] uppercase">Upcoming Deadlines</p>
-            <p className="text-base font-extrabold text-slate-800">{kpis?.upcomingDeadlines ?? 6} Obligations</p>
+            <p className="text-slate-400 font-semibold text-[10px] uppercase">{t('dash.upcomingDeadlines', 'Upcoming Deadlines')}</p>
+            <p className="text-base font-extrabold text-slate-800">{kpis?.upcomingDeadlines ?? 7} {t('dash.obligations', 'Obligations')}</p>
           </div>
         </div>
 
@@ -326,8 +306,8 @@ export const Dashboard: React.FC = () => {
             <FileWarning className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-slate-400 font-semibold text-[10px] uppercase">Expired Clearances</p>
-            <p className="text-base font-extrabold text-slate-800">{kpis?.expiredDocuments ?? 2} Documents</p>
+            <p className="text-slate-400 font-semibold text-[10px] uppercase">{t('dash.expiredClearances', 'Expired Clearances')}</p>
+            <p className="text-base font-extrabold text-slate-800">{kpis?.expiredDocuments ?? 2} {t('dash.documents', 'Documents')}</p>
           </div>
         </div>
 
@@ -336,8 +316,8 @@ export const Dashboard: React.FC = () => {
             <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-slate-400 font-semibold text-[10px] uppercase">Safety Score</p>
-            <p className="text-base font-extrabold text-slate-800">{kpis?.avgSafetyScore ?? 88} / 100</p>
+            <p className="text-slate-400 font-semibold text-[10px] uppercase">{t('dash.safetyScore', 'Safety Score')}</p>
+            <p className="text-base font-extrabold text-slate-800">{kpis?.avgSafetyScore ?? 92} / 100</p>
           </div>
         </div>
 
@@ -346,8 +326,8 @@ export const Dashboard: React.FC = () => {
             <TrendingUp className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-slate-400 font-semibold text-[10px] uppercase">Environmental Score</p>
-            <p className="text-base font-extrabold text-slate-800">{kpis?.avgEnvScore ?? 82} / 100</p>
+            <p className="text-slate-400 font-semibold text-[10px] uppercase">{t('dash.envScore', 'Environmental Score')}</p>
+            <p className="text-base font-extrabold text-slate-800">{kpis?.avgEnvScore ?? 88} / 100</p>
           </div>
         </div>
       </div>
@@ -359,8 +339,8 @@ export const Dashboard: React.FC = () => {
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">National Compliance & Violation Trends</h3>
-              <p className="text-xs text-slate-500">6-Month rolling statutory score vs active enforcement notices</p>
+              <h3 className="text-sm font-bold text-slate-900">{t('dash.monthlyTrends', 'National Compliance & Violation Trends')}</h3>
+              <p className="text-xs text-slate-500">{t('dash.monthlyTrendsSubtitle', '6-Month rolling statutory score vs active enforcement notices')}</p>
             </div>
             <span className="text-xs font-bold text-gov-primary bg-gov-primary/10 px-2 py-1 rounded">
               Monthly Aggregates
@@ -399,15 +379,15 @@ export const Dashboard: React.FC = () => {
             <div>
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
                 <AlertOctagon className="w-4 h-4 text-rose-600" />
-                Violations by Severity
+                {t('dash.violationsBySeverity', 'Violations by Severity')}
               </h3>
-              <p className="text-xs text-slate-500">Live breakdown of active enforcement alerts</p>
+              <p className="text-xs text-slate-500">{t('dash.violationsSubtitle', 'Live breakdown of active enforcement alerts')}</p>
             </div>
             <button
               onClick={() => navigate('/violations')}
-              className="text-xs text-gov-primary hover:text-white bg-gov-primary/10 hover:bg-gov-primary font-bold flex items-center gap-1 px-3 py-1 rounded-lg border border-gov-primary/20 transition-all shadow-xs"
+              className="text-xs text-gov-primary hover:text-white bg-gov-primary/10 hover:bg-gov-primary font-bold flex items-center gap-1 px-3 py-1 rounded-lg border border-gov-primary/20 transition-all shadow-xs cursor-pointer"
             >
-              Total {totalViolationsCount} Notices →
+              {totalViolationsCount} {t('dash.notices', 'Notices')} →
             </button>
           </div>
 
@@ -415,7 +395,7 @@ export const Dashboard: React.FC = () => {
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
             <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-1.5">
               <span>Severity Distribution Spectrum</span>
-              <span className="font-mono text-slate-500">{totalViolationsCount} Total Active Notices</span>
+              <span className="font-mono text-slate-500">{totalViolationsCount} {t('dash.notices', 'Notices')}</span>
             </div>
             <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
               {severityPieData.map((item) => (
@@ -423,7 +403,7 @@ export const Dashboard: React.FC = () => {
                   key={item.name}
                   style={{ width: `${item.percent}%`, backgroundColor: item.color }}
                   className="h-full transition-all hover:opacity-90 relative"
-                  title={`${item.name}: ${item.value} (${item.percent}%)`}
+                  title={`${item.label}: ${item.value} (${item.percent}%)`}
                 />
               ))}
             </div>
@@ -454,7 +434,7 @@ export const Dashboard: React.FC = () => {
                         <div className="bg-slate-900 text-white p-2.5 rounded-lg shadow-xl text-xs border border-slate-700 space-y-1">
                           <div className="flex items-center gap-1.5 font-bold">
                             <span>{d.icon}</span>
-                            <span>{d.name} SEVERITY</span>
+                            <span>{d.label}</span>
                           </div>
                           <p className="text-gov-gold font-extrabold text-sm">{d.value} Active Notices ({d.percent}%)</p>
                           <p className="text-[10px] text-slate-300">{d.desc}</p>
@@ -469,7 +449,7 @@ export const Dashboard: React.FC = () => {
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-2xl font-black text-slate-900">{totalViolationsCount}</span>
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Alerts</span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{t('dash.totalAlerts', 'Total Alerts')}</span>
             </div>
           </div>
 
@@ -483,7 +463,7 @@ export const Dashboard: React.FC = () => {
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-black tracking-tight flex items-center gap-1.5">
-                    <span>{item.icon}</span> {item.name}
+                    <span>{item.icon}</span> {item.label}
                   </span>
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${item.badgeBg}`}>
                     {item.percent}%
@@ -492,7 +472,7 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-baseline justify-between mt-1">
                   <div className="flex items-baseline gap-1">
                     <span className="text-xl font-black">{item.value}</span>
-                    <span className="text-xs font-semibold opacity-80">notices</span>
+                    <span className="text-xs font-semibold opacity-80">{t('dash.notices', 'notices')}</span>
                   </div>
                   <span className="text-[10px] font-semibold opacity-75">{item.fine}</span>
                 </div>
@@ -509,14 +489,14 @@ export const Dashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Compliance by Statutory Category</h3>
-              <p className="text-xs text-slate-500">Conformity across safety, environmental, and labour acts</p>
+              <h3 className="text-sm font-bold text-slate-900">{t('dash.complianceByCategory', 'Compliance by Statutory Category')}</h3>
+              <p className="text-xs text-slate-500">{t('dash.categorySubtitle', 'Conformity across safety, environmental, and labour acts')}</p>
             </div>
             <button
               onClick={() => navigate('/compliance')}
-              className="text-xs text-gov-primary hover:underline font-bold flex items-center gap-1"
+              className="text-xs text-gov-primary hover:underline font-bold flex items-center gap-1 cursor-pointer"
             >
-              View All <ArrowRight className="w-3.5 h-3.5" />
+              {t('dash.allMines', 'View All')} <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -539,14 +519,14 @@ export const Dashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Colliery Compliance & Risk Benchmarks</h3>
-              <p className="text-xs text-slate-500">Mines requiring prioritized statutory intervention</p>
+              <h3 className="text-sm font-bold text-slate-900">{t('dash.collieryBenchmarks', 'Colliery Compliance & Risk Benchmarks')}</h3>
+              <p className="text-xs text-slate-500">{t('dash.benchmarksSubtitle', 'Mines requiring prioritized statutory intervention')}</p>
             </div>
             <button
               onClick={() => navigate('/mines')}
-              className="text-xs text-gov-primary hover:underline font-bold flex items-center gap-1"
+              className="text-xs text-gov-primary hover:underline font-bold flex items-center gap-1 cursor-pointer"
             >
-              All Mines <ArrowRight className="w-3.5 h-3.5" />
+              {t('dash.allMines', 'All Mines')} <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -570,7 +550,7 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <p className="text-xs font-extrabold text-slate-800">{m.score}%</p>
-                    <p className="text-[10px] text-slate-400">{m.violationsCount} open viols</p>
+                    <p className="text-[10px] text-slate-400">{m.violationsCount} {t('dash.notices', 'open viols')}</p>
                   </div>
                   <StatusBadge status={m.risk} type="risk" />
                 </div>

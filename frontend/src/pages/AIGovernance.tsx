@@ -38,6 +38,7 @@ import {
   AlertOctagon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   MOCK_AI_PREDICTIONS,
   MOCK_MINES,
@@ -207,6 +208,7 @@ const defaultAIDashboardData = {
 
 export const AIGovernance: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const [dashboardData, setDashboardData] = useState<any>(defaultAIDashboardData);
   const [mines, setMines] = useState<Mine[]>(MOCK_MINES);
@@ -557,7 +559,7 @@ export const AIGovernance: React.FC = () => {
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
           <span className="font-bold text-emerald-400 uppercase text-[11px] tracking-wider">
-            LIVE SCADA TELEMETRY FEED (15/15 INDIAN COLLIERIES STREAMING)
+            {t('ai.liveScada', 'LIVE SCADA TELEMETRY FEED (15/15 INDIAN COLLIERIES STREAMING)')}
           </span>
         </div>
 
@@ -585,21 +587,21 @@ export const AIGovernance: React.FC = () => {
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-black uppercase tracking-widest text-gov-gold bg-gov-gold/10 px-2.5 py-0.5 rounded border border-gov-gold/30 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-gov-gold" />
-              DECISION SUPPORT INTELLIGENCE
+              {t('ai.decisionSupport', 'DECISION SUPPORT INTELLIGENCE')}
             </span>
-            <span className="text-xs text-slate-300">• Human-in-the-Loop Statutory Governance</span>
+            <span className="text-xs text-slate-300">• {t('ai.humanInTheLoop', 'Human-in-the-Loop Statutory Governance')}</span>
           </div>
           <h1 className="text-2xl font-black tracking-tight">
-            AI Statutory Risk Diagnostics & Explainability Console
+            {t('ai.consoleTitle', 'AI Statutory Risk Diagnostics & Explainability Console')}
           </h1>
           <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-            Predictive multi-factor early warning risk models evaluating active violations, overdue CAPAs, ventilation gas telemetry, and environmental thresholds with complete regulatory explainability.
+            {t('ai.consoleSubtitle', 'Predictive multi-factor early warning risk models evaluating active violations, overdue CAPAs, ventilation gas telemetry, and environmental thresholds with complete regulatory explainability.')}
           </p>
         </div>
 
         {/* Active Engine Badge */}
         <div className="p-3.5 rounded-xl bg-white/10 border border-white/20 backdrop-blur-xs text-right text-xs shrink-0">
-          <span className="text-[10px] text-gov-gold uppercase font-black tracking-wider block">Active AI Engine</span>
+          <span className="text-[10px] text-gov-gold uppercase font-black tracking-wider block">{t('ai.activeEngine', 'Active AI Engine')}</span>
           <strong className="text-white font-extrabold flex items-center gap-1.5 justify-end mt-0.5">
             <Cpu className="w-4 h-4 text-gov-gold" />
             {engineStatus?.model || 'Gemini 2.5 Flash / Statutory Safety Model'}
@@ -613,29 +615,29 @@ export const AIGovernance: React.FC = () => {
       {/* 3. Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Analyzed Collieries</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('ai.totalAnalyzed', 'Total Analyzed Collieries')}</p>
           <p className="text-2xl font-black text-slate-900 mt-1">{metrics?.totalPredictions || 15}</p>
           <p className="text-[10px] text-slate-500 mt-0.5">100% telemetry coverage across India</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">High / Critical Risk Detections</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('ai.highRiskDetections', 'High / Critical Risk Detections')}</p>
           <p className="text-2xl font-black text-rose-600 mt-1">{metrics?.highRiskMinesCount || 5}</p>
           <p className="text-[10px] text-slate-500 mt-0.5">DGMS priority statutory surveillance</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Model Confidence Index</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('ai.confidenceIndex', 'Model Confidence Index')}</p>
           <p className="text-2xl font-black text-emerald-700 mt-1">{metrics?.avgConfidence || 94.8}%</p>
           <p className="text-[10px] text-slate-500 mt-0.5">Statutory factor calibration score</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Human Decision Ledger</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('ai.humanLedger', 'Human Decision Ledger')}</p>
           <p className="text-2xl font-black text-gov-primary mt-1">
-            {metrics?.humanAccepted || 8} <span className="text-xs text-emerald-600 font-bold">Approved</span> • {metrics?.humanRejected || 2} <span className="text-xs text-rose-600 font-bold">Rejected</span>
+            {metrics?.humanAccepted || 8} <span className="text-xs text-emerald-600 font-bold">{t('ai.approved', 'Approved')}</span> • {metrics?.humanRejected || 2} <span className="text-xs text-rose-600 font-bold">{t('ai.rejected', 'Rejected')}</span>
           </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">{metrics?.pendingReview || 5} Pending Official Sign-Off</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">{metrics?.pendingReview || 5} {t('ai.pendingReview', 'Pending Official Sign-Off')}</p>
         </div>
       </div>
 
@@ -645,10 +647,10 @@ export const AIGovernance: React.FC = () => {
           <div>
             <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-gov-gold" />
-              Real-Time AI Statutory Risk Model Executor
+              {t('ai.executorTitle', 'Real-Time AI Statutory Risk Model Executor')}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Select any colliery to execute the multi-factor heuristic risk model across live notices, telemetry & CAPA lag.
+              {t('ai.executorSubtitle', 'Select any colliery to execute the multi-factor heuristic risk model across live notices, telemetry & CAPA lag.')}
             </p>
           </div>
 
@@ -677,7 +679,7 @@ export const AIGovernance: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4 text-gov-gold fill-gov-gold" /> Run Real-Time AI Statutory Risk Model
+                  <Play className="w-4 h-4 text-gov-gold fill-gov-gold" /> {t('btn.executeModel', 'Run Real-Time AI Statutory Risk Model')}
                 </>
               )}
             </button>
@@ -687,7 +689,7 @@ export const AIGovernance: React.FC = () => {
               disabled={isAnalyzing}
               className="px-4 py-2.5 bg-slate-800 text-slate-100 hover:bg-slate-900 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-xs whitespace-nowrap cursor-pointer"
             >
-              <Zap className="w-3.5 h-3.5 text-amber-400" /> Batch All 15 Mines
+              <Zap className="w-3.5 h-3.5 text-amber-400" /> {t('btn.batchAnalyze', 'Batch All 15 Mines')}
             </button>
           </div>
         </div>
@@ -916,7 +918,7 @@ export const AIGovernance: React.FC = () => {
                   className="px-3.5 py-2 bg-gov-dark text-gov-gold hover:bg-slate-900 rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5 text-gov-gold" />
-                  Generate Official DGMS Notice
+                  {t('ai.officialNoticeBtn', 'Generate Official DGMS Notice')}
                 </button>
 
                 <button
@@ -933,7 +935,7 @@ export const AIGovernance: React.FC = () => {
                   className="px-4 py-2 bg-gov-primary text-white hover:bg-gov-dark rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
                   <CheckCircle className="w-3.5 h-3.5 text-white" />
-                  Review & Record Decision →
+                  {t('btn.review', 'Review & Record Decision →')}
                 </button>
 
                 <button
@@ -941,7 +943,7 @@ export const AIGovernance: React.FC = () => {
                   className="px-3.5 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5 text-slate-500" />
-                  Print Briefing
+                  {t('btn.print', 'Print Briefing')}
                 </button>
               </div>
             </div>
@@ -1248,14 +1250,14 @@ export const AIGovernance: React.FC = () => {
                       }}
                       className="px-2.5 py-1 text-xs font-bold text-gov-primary bg-gov-primary/10 rounded-lg hover:bg-gov-primary hover:text-white transition-colors cursor-pointer"
                     >
-                      Diagnose Mine ⚡
+                      {t('btn.diagnose', 'Diagnose Mine ⚡')}
                     </button>
 
                     <button
                       onClick={() => setExplainPrediction(p)}
                       className="px-2.5 py-1 text-xs font-bold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors shadow-xs cursor-pointer"
                     >
-                      Explain Factors 🔍
+                      {t('btn.explain', 'Explain Factors 🔍')}
                     </button>
 
                     <button
@@ -1265,7 +1267,7 @@ export const AIGovernance: React.FC = () => {
                       }}
                       className="px-3 py-1 text-xs font-bold text-white bg-gov-primary rounded-lg hover:bg-gov-dark transition-colors shadow-xs cursor-pointer"
                     >
-                      Review & Decide →
+                      {t('btn.review', 'Review & Decide →')}
                     </button>
                   </div>
                 </div>
