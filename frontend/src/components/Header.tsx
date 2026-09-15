@@ -94,33 +94,34 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       {/* Top Indian Government Tricolor Stripe */}
       <div className="gov-tricolor-stripe"></div>
 
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+      <div className="px-3 sm:px-5 lg:px-7">
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-4 min-w-0">
           
           {/* Left: Mobile Toggle & Government Portal Branding */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
             <button
               onClick={onToggleSidebar}
-              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
+              className="lg:hidden p-1.5 sm:p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
+              aria-label="Toggle navigation menu"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <div className="flex items-center gap-2.5 cursor-pointer min-w-0" onClick={() => navigate('/dashboard')}>
               {/* Emblem / Logo */}
-              <div className="w-10 h-10 rounded-lg bg-gov-dark flex items-center justify-center text-white font-serif font-bold shadow-sm border border-slate-700 shrink-0">
-                <span className="text-gov-gold text-lg">⚖</span>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gov-dark flex items-center justify-center text-white font-serif font-bold shadow-sm border border-slate-700 shrink-0">
+                <span className="text-gov-gold text-base sm:text-lg">⚖</span>
               </div>
-              <div className="hidden sm:block">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xs lg:text-sm font-extrabold text-gov-dark tracking-tight leading-none uppercase">
+              <div className="hidden sm:block min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-xs lg:text-sm font-extrabold text-gov-dark tracking-tight leading-none uppercase truncate max-w-[190px] sm:max-w-[260px] md:max-w-[340px] lg:max-w-none">
                     {t('header.portalSubtitle', 'GOVERNMENT OF INDIA • MINISTRY OF COAL')}
                   </h1>
-                  <span className="bg-gov-gold/20 text-gov-gold text-[10px] font-bold px-1.5 py-0.5 rounded border border-gov-gold/30">
+                  <span className="hidden md:inline-block bg-gov-gold/20 text-gov-gold text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded border border-gov-gold/30 shrink-0">
                     DGMS PORTAL
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate hidden lg:block max-w-[280px] xl:max-w-none">
                   {t('header.portalTitle', 'Coal Mine Statutory Compliance & Governance Monitoring System')}
                 </p>
               </div>
@@ -128,7 +129,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </div>
 
           {/* Middle: Global Search */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
+          <div className="hidden xl:flex flex-1 max-w-xs 2xl:max-w-md mx-2 min-w-0">
             <form onSubmit={handleSearchSubmit} className="w-full relative">
               <input
                 type="text"
@@ -142,17 +143,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </div>
 
           {/* Right: Language Segmented Switcher + Role + Alerts + Profile */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             
             {/* 🌐 Clean Dual-Pill Language Switcher (English | हिन्दी) */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-300/80 shadow-inner">
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
               <button
                 type="button"
                 onClick={() => setLanguage('en')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-bold rounded-md transition-all cursor-pointer ${
                   language === 'en'
                     ? 'bg-gov-primary text-white shadow-xs font-extrabold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
                 title="Switch to English"
               >
@@ -162,10 +163,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={() => setLanguage('hi')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-bold rounded-md transition-all cursor-pointer ${
                   language === 'hi'
                     ? 'bg-gov-primary text-white shadow-xs font-extrabold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
                 title="हिन्दी में बदलें"
               >
@@ -174,22 +175,22 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             </div>
 
             {/* Official Role Badge */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gov-primary/10 text-gov-primary border border-gov-primary/30 rounded-lg">
-              <Shield className="w-3.5 h-3.5 text-gov-gold" />
-              <span className="hidden lg:inline text-slate-500 font-medium">{t('header.activeRole', 'Role')}:</span>
-              <span className="font-extrabold text-gov-primary">
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-gov-primary/10 text-gov-primary border border-gov-primary/30 rounded-lg shrink-0">
+              <Shield className="w-3.5 h-3.5 text-gov-gold shrink-0" />
+              <span className="hidden xl:inline text-slate-500 font-medium">{t('header.activeRole', 'Role')}:</span>
+              <span className="font-extrabold text-gov-primary truncate max-w-[110px]">
                 {t(`role.${user?.role}` as string, user?.role?.replace(/_/g, ' ') || 'Officer')}
               </span>
             </div>
 
             {/* Notification Bell */}
-            <div className="relative" ref={alertsRef}>
+            <div className="relative shrink-0" ref={alertsRef}>
               <button
                 onClick={() => {
                   setShowAlertsDropdown(!showAlertsDropdown);
                   setShowUserDropdown(false);
                 }}
-                className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
+                className="relative p-1.5 sm:p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
                 title={t('header.notifications', 'Statutory Alerts & Notifications')}
               >
                 <Bell className="w-5 h-5" />
@@ -201,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               </button>
 
               {showAlertsDropdown && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in fade-in duration-150">
+                <div className="absolute right-0 mt-2 w-72 sm:w-88 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in fade-in duration-150">
                   <div className="px-4 py-3 bg-gov-dark text-white flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-gov-gold" />
@@ -254,22 +255,22 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             </div>
 
             {/* User Profile Avatar & Menu */}
-            <div className="relative" ref={userRef}>
+            <div className="relative shrink-0" ref={userRef}>
               <button
                 onClick={() => {
                   setShowUserDropdown(!showUserDropdown);
                   setShowAlertsDropdown(false);
                 }}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-full bg-gov-secondary text-white font-bold text-xs flex items-center justify-center border border-slate-300">
-                  {user?.name ? user.name.charAt(0) : 'U'}
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gov-secondary text-white font-bold text-xs flex items-center justify-center border border-slate-300 shrink-0">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                 </div>
-                <div className="hidden xl:block text-left">
-                  <p className="text-xs font-bold text-slate-800 leading-tight">{user?.name}</p>
-                  <p className="text-[10px] text-slate-500 leading-none">{user?.department?.split('-')[0]}</p>
+                <div className="hidden 2xl:block text-left">
+                  <p className="text-xs font-bold text-slate-800 leading-tight truncate max-w-[100px]">{user?.name}</p>
+                  <p className="text-[10px] text-slate-500 leading-none truncate max-w-[100px]">{user?.department?.split('-')[0]}</p>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block shrink-0" />
               </button>
 
               {showUserDropdown && (
