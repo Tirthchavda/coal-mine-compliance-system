@@ -87,6 +87,18 @@ const FALLBACK_ACCOUNTS: Record<string, User> = {
     status: 'ACTIVE',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2026-08-01T00:00:00Z'
+  },
+  'worker@mine.gov.in': {
+    id: 'usr-worker',
+    name: 'Rameshwar Mahato (Shift Safety Steward)',
+    email: 'worker@mine.gov.in',
+    role: 'WORKER',
+    department: 'Underground Seam IV - Frontline Extraction Team',
+    assignedMineId: 'mine-jharia-01',
+    phone: '+91-94301-55219',
+    status: 'ACTIVE',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2026-08-01T00:00:00Z'
   }
 };
 
@@ -296,6 +308,13 @@ export const Login: React.FC = () => {
                   className="text-left hover:text-gov-gold transition-colors truncate"
                 >
                   • <span className="text-slate-400">Contractor:</span> contractor@partner.com
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEmail('worker@mine.gov.in')}
+                  className="text-left hover:text-gov-gold transition-colors truncate"
+                >
+                  • <span className="text-slate-400">Mine Worker:</span> worker@mine.gov.in
                 </button>
               </div>
             </div>

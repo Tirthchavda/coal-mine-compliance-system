@@ -239,6 +239,16 @@ export const Users: React.FC = () => {
         >
           Contractors
         </button>
+        <button
+          onClick={() => setRoleFilter(roleFilter === 'WORKER' ? '' : 'WORKER')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            roleFilter === 'WORKER'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Mine Workers
+        </button>
       </div>
 
       {/* Filter Bar */}
@@ -265,6 +275,7 @@ export const Users: React.FC = () => {
           <option value="SAFETY_INSPECTOR">SAFETY INSPECTOR</option>
           <option value="COMPLIANCE_OFFICER">COMPLIANCE OFFICER</option>
           <option value="CONTRACTOR">CONTRACTOR</option>
+          <option value="WORKER">MINE WORKER</option>
         </select>
 
         <select
@@ -355,6 +366,7 @@ export const Users: React.FC = () => {
                 <option value="SAFETY_INSPECTOR">SAFETY INSPECTOR (DGMS Audits)</option>
                 <option value="COMPLIANCE_OFFICER">COMPLIANCE OFFICER (Statutory Returns)</option>
                 <option value="CONTRACTOR">CONTRACTOR (Field Partner)</option>
+                <option value="WORKER">MINE WORKER (Frontline Safety Steward)</option>
               </select>
             </div>
 

@@ -100,7 +100,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="compliance"
           element={
-            <RoleRoute allowedRoles={['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']}>
+            <RoleRoute allowedRoles={['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER', 'WORKER']}>
               <Compliance />
             </RoleRoute>
           }
@@ -108,7 +108,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="compliance/:id"
           element={
-            <RoleRoute allowedRoles={['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']}>
+            <RoleRoute allowedRoles={['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER', 'WORKER']}>
               <ComplianceDetail />
             </RoleRoute>
           }
@@ -124,7 +124,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="violations"
           element={
-            <RoleRoute allowedRoles={['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'HQ_MANAGEMENT', 'COMPLIANCE_OFFICER']}>
+            <RoleRoute allowedRoles={['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'HQ_MANAGEMENT', 'COMPLIANCE_OFFICER', 'WORKER']}>
               <Violations />
             </RoleRoute>
           }
@@ -132,7 +132,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="actions"
           element={
-            <RoleRoute allowedRoles={['SUPER_ADMIN', 'MINE_MANAGER', 'CONTRACTOR', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']}>
+            <RoleRoute allowedRoles={['SUPER_ADMIN', 'MINE_MANAGER', 'CONTRACTOR', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER', 'WORKER']}>
               <CorrectiveActions />
             </RoleRoute>
           }
@@ -148,7 +148,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="safety"
           element={
-            <RoleRoute allowedRoles={['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'CONTRACTOR']}>
+            <RoleRoute allowedRoles={['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'CONTRACTOR', 'WORKER']}>
               <Safety />
             </RoleRoute>
           }
