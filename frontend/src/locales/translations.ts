@@ -46,6 +46,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'role.SAFETY_INSPECTOR': { en: 'Safety Inspector (DGMS)', hi: 'सुरक्षा निरीक्षक (DGMS)' },
   'role.COMPLIANCE_OFFICER': { en: 'Compliance Officer', hi: 'अनुपालन अधिकारी' },
   'role.CONTRACTOR': { en: 'Mining Contractor', hi: 'खनन ठेकेदार' },
+  'role.WORKER': { en: 'Mine Worker / Safety Steward', hi: 'खान श्रमिक / सुरक्षा स्टीवर्ड' },
 
   // Action Buttons
   'btn.executeModel': { en: 'Run Real-Time AI Statutory Risk Model', hi: 'रीयल-टाइम एआई वैधानिक जोखिम मॉडल चलाएं' },
@@ -156,6 +157,47 @@ export const TRANSLATIONS: TranslationDictionary = {
   'ai.humanDecision': { en: 'Human Decision:', hi: 'मानव निर्णय:' },
   'ai.approved': { en: 'Approved', hi: 'स्वीकृत' },
   'ai.rejected': { en: 'Rejected', hi: 'अस्वीकृत' },
-  'ai.pendingReview': { en: 'Pending Official Review', hi: 'आधिकारिक समीक्षा लंबित' }
+  'ai.pendingReview': { en: 'Pending Official Review', hi: 'आधिकारिक समीक्षा लंबित' },
+
+  // Role Dashboards Specific Translations
+  'worker.title': { en: 'Mine Worker & Ground Safety Console', hi: 'खान श्रमिक एवं जमीनी सुरक्षा कंसोल' },
+  'worker.subtitle': { en: 'Daily shift safety checklist, ground hazard reporting & PPE compliance ledger', hi: 'दैनिक पाली सुरक्षा चेकलिस्ट, खतरा रिपोर्टिंग एवं पीपीई अनुपालन बही' },
+  'worker.reportHazard': { en: 'Report Ground Hazard / Compliance Issue', hi: 'जमीनी खतरा / अनुपालन समस्या दर्ज करें' },
+  'worker.ppeChecklist': { en: 'Daily PPE & Safety Self-Verification', hi: 'दैनिक पीपीई एवं सुरक्षा स्व-सत्यापन' },
+  'worker.pitTelemetry': { en: 'Live Pit Seam Telemetry', hi: 'लाइव पिट सीम टेलीमेट्री' },
+  'worker.shiftStatus': { en: 'Shift Status: Safe to Enter', hi: 'पाली स्थिति: प्रवेश सुरक्षित' },
+  'worker.myTasks': { en: 'My Assigned Safety Tasks', hi: 'मेरे सौंपे गए सुरक्षा कार्य' },
+  'worker.trainingStatus': { en: 'DGMS Safety Refresher: Valid', hi: 'DGMS सुरक्षा प्रशिक्षण: वैध' },
+
+  'hq.title': { en: 'Corporate Operations & Compliance Governance', hi: 'कॉर्पोरेट संचालन एवं अनुपालन शासन' },
+  'hq.subtitle': { en: 'Executive dashboard tracking production vs compliance trade-offs, financial risk & subsidiary benchmarks', hi: 'उत्पादन बनाम अनुपालन, वित्तीय जोखिम और सहायक कंपनियों का कार्यकारी डैशबोर्ड' },
+  'hq.penaltyExposure': { en: 'Statutory Penalty Exposure', hi: 'वैधानिक जुर्माना जोखिम' },
+  'hq.productionRatio': { en: 'Production vs Compliance Ratio', hi: 'उत्पादन बनाम अनुपालन अनुपात' },
+  'hq.subsidiaryScore': { en: 'Subsidiary Benchmark Ranking', hi: 'सहायक कंपनी बेंचमार्क रैंकिंग' },
+
+  'manager.title': { en: 'Colliery Operations & Shift Safety Command', hi: 'खदान संचालन एवं पाली सुरक्षा कमान' },
+  'manager.subtitle': { en: 'Real-time underground SCADA gas monitoring, shift worker muster & local CAPA enforcement', hi: 'रीयल-टाइम भूमिगत स्काडा गैस निगरानी, श्रमिक मस्टर और स्थानीय CAPA' },
+  'manager.methaneCH4': { en: 'Methane (CH4) Sensor', hi: 'मीथेन (CH4) संवेदक' },
+  'manager.carbonCO': { en: 'Carbon Monoxide (CO)', hi: 'कार्बन मोनोऑक्साइड (CO)' },
+  'manager.airVelocity': { en: 'Ventilation Airflow', hi: 'वेंटिलेशन वायु प्रवाह' },
+  'manager.dailyReturnBtn': { en: 'Submit Daily Form IV Return', hi: 'दैनिक प्रपत्र IV जमा करें' },
+
+  'inspector.title': { en: 'DGMS Statutory Inspection & Enforcement Console', hi: 'DGMS वैधानिक निरीक्षण एवं प्रवर्तन कंसोल' },
+  'inspector.subtitle': { en: 'Statutory audit schedule, Section 22 improvement notices, evidence audit & CAPA sign-off', hi: 'वैधानिक ऑडिट शेड्यूल, धारा 22 सुधार नोटिस एवं CAPA सत्यापन' },
+  'inspector.scheduleAudit': { en: 'Schedule DGMS Surprise Audit', hi: 'DGMS औचक निरीक्षण निर्धारित करें' },
+  'inspector.issueNotice': { en: 'Issue Section 22 Notice', hi: 'धारा 22 नोटिस जारी करें' },
+  'inspector.pendingSignOff': { en: 'Pending Inspector Sign-Off', hi: 'निरीक्षक हस्ताक्षर लंबित' },
+
+  'compliance.title': { en: 'Statutory Clearances & Environmental Quality Portal', hi: 'वैधानिक स्वीकृतियां एवं पर्यावरण गुणवत्ता पोर्टल' },
+  'compliance.subtitle': { en: 'Environmental CPCB monitoring, statutory document vault horizon & regulatory filings', hi: 'पर्यावरण सीपीसीबी निगरानी, वैधानिक दस्तावेज़ वॉल्ट एवं विनियामक फाइलिंग' },
+  'compliance.airQuality': { en: 'Ambient Air Quality (CPCB)', hi: 'परिवेशी वायु गुणवत्ता (CPCB)' },
+  'compliance.vaultHealth': { en: 'Clearance Vault Horizon', hi: 'स्वीकृति वॉल्ट स्थिति' },
+  'compliance.uploadDoc': { en: 'Upload Statutory Clearance', hi: 'वैधानिक अनुमति अपलोड करें' },
+
+  'contractor.title': { en: 'Mining Contractor & HEMM Safety Operations', hi: 'खनन ठेकेदार एवं भारी मशीनरी सुरक्षा संचालन' },
+  'contractor.subtitle': { en: 'Assigned CAPA remediations, heavy earthmoving machinery fitness logs & workforce safety', hi: 'सौंपे गए CAPA सुधार, भारी मशीनरी फिटनेस लॉग और कार्यबल सुरक्षा' },
+  'contractor.hemmFitness': { en: 'HEMM Machinery Fitness', hi: 'मशीनरी फिटनेस दर' },
+  'contractor.submitEvidence': { en: 'Submit CAPA Evidence', hi: 'CAPA समाधान साक्ष्य अपलोड करें' },
+  'contractor.crewSafety': { en: 'Contractor Crew Medicals', hi: 'ठेका श्रमिक चिकित्सा स्थिति' }
 };
 

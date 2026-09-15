@@ -1,44 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api } from '../api/client';
-import { StatCard } from '../components/StatCard';
-import { StatusBadge } from '../components/StatusBadge';
-import { useLanguage } from '../context/LanguageContext';
-import {
-  Mountain,
-  ShieldCheck,
-  AlertTriangle,
-  AlertOctagon,
-  CheckSquare,
-  Clock,
-  FileWarning,
-  Award,
-  Sparkles,
-  TrendingUp,
-  ArrowRight,
-  PlusCircle,
-  ClipboardList,
-  UploadCloud,
-  Layers
-} from 'lucide-react';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
-} from 'recharts';
-
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { api } from '../api/client';
+import { UserRole } from '../types';
 import { MOCK_MINES, MOCK_VIOLATIONS } from '../data/mockData';
+
+// Role-Specific Custom Dashboards
+import { SuperAdminDashboard } from '../components/dashboards/SuperAdminDashboard';
+import { HQManagementDashboard } from '../components/dashboards/HQManagementDashboard';
+import { MineManagerDashboard } from '../components/dashboards/MineManagerDashboard';
+import { SafetyInspectorDashboard } from '../components/dashboards/SafetyInspectorDashboard';
+import { ComplianceOfficerDashboard } from '../components/dashboards/ComplianceOfficerDashboard';
+import { ContractorDashboard } from '../components/dashboards/ContractorDashboard';
+import { WorkerDashboard } from '../components/dashboards/WorkerDashboard';
+
+import {
+  Shield,
+  Building2,
+  Mountain,
+  ClipboardCheck,
+  Leaf,
+  Truck,
+  HardHat,
+  Sparkles
+} from 'lucide-react';
 
 const DEFAULT_DASHBOARD_DATA = {
   kpis: {
@@ -74,7 +59,7 @@ const DEFAULT_DASHBOARD_DATA = {
     { month: 'Dec 2025', complianceRate: 80, activeViolations: 19 },
     { month: 'Jan 2026', complianceRate: 83, activeViolations: 16 },
     { month: 'Feb 2026', complianceRate: 84, activeViolations: 15 },
-    { month: 'Mar 2026', complianceRate: 86, activeViolations: 15 }
+    { month: 'Mar 2026', complianceRate: 86.4, activeViolations: 15 }
   ],
   topMines: MOCK_MINES.map(m => ({
     id: m.id,
@@ -84,20 +69,23 @@ const DEFAULT_DASHBOARD_DATA = {
     score: m.complianceScore,
     risk: m.riskLevel,
     violationsCount: MOCK_VIOLATIONS.filter(v => v.mineId === m.id && v.status !== 'CLOSED').length
-  })),
-  recentActivity: [
-    { id: 'act-1', type: 'INSPECTION_COMPLETED', title: 'DGMS Electrical & Haulage Safety Audit Completed', mineName: 'Jharia Block II', timestamp: '2 hours ago', severity: 'MEDIUM' },
-    { id: 'act-2', type: 'VIOLATION_ISSUED', title: 'CMR Sec 129 Gas Monitoring Return Exceedance Notice', mineName: 'Raniganj Underground', timestamp: '5 hours ago', severity: 'HIGH' },
-    { id: 'act-3', type: 'CAPA_VERIFIED', title: 'Dust Suppression Sprinklers Installed at Chute 4', mineName: 'Gevra Opencast', timestamp: '1 day ago', severity: 'LOW' }
-  ]
+  }))
 };
 
+const ALL_ROLES: { role: UserRole; labelKey: string; defaultLabel: string; icon: React.ElementType }[] = [
+  { role: 'SUPER_ADMIN', labelKey: 'role.SUPER_ADMIN', defaultLabel: 'Super Admin', icon: Shield },
+  { role: 'HQ_MANAGEMENT', labelKey: 'role.HQ_MANAGEMENT', defaultLabel: 'HQ Management', icon: Building2 },
+  { role: 'MINE_MANAGER', labelKey: 'role.MINE_MANAGER', defaultLabel: 'Mine Manager', icon: Mountain },
+  { role: 'SAFETY_INSPECTOR', labelKey: 'role.SAFETY_INSPECTOR', defaultLabel: 'Safety Inspector', icon: ClipboardCheck },
+  { role: 'COMPLIANCE_OFFICER', labelKey: 'role.COMPLIANCE_OFFICER', defaultLabel: 'Compliance Officer', icon: Leaf },
+  { role: 'CONTRACTOR', labelKey: 'role.CONTRACTOR', defaultLabel: 'Mining Contractor', icon: Truck },
+  { role: 'WORKER', labelKey: 'role.WORKER', defaultLabel: 'Mine Worker', icon: HardHat }
+];
+
 export const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const { user, hasRole } = useAuth();
+  const { user, switchRole } = useAuth();
   const { t } = useLanguage();
   const [data, setData] = useState<any>(DEFAULT_DASHBOARD_DATA);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchDashboard = async () => {
     try {
@@ -106,7 +94,7 @@ export const Dashboard: React.FC = () => {
         setData(res.data.data);
       }
     } catch (err) {
-      console.warn('Using instant pre-seeded national dashboard metrics');
+      // Use fallback
     }
   };
 
@@ -114,452 +102,72 @@ export const Dashboard: React.FC = () => {
     fetchDashboard();
   }, []);
 
-  const kpis = data?.kpis || DEFAULT_DASHBOARD_DATA.kpis;
-  const severityCounts = data?.severityCounts || DEFAULT_DASHBOARD_DATA.severityCounts;
-  const complianceByCategory = data?.complianceByCategory || DEFAULT_DASHBOARD_DATA.complianceByCategory;
-  const monthlyTrends = data?.monthlyTrends || DEFAULT_DASHBOARD_DATA.monthlyTrends;
-  const topMines = data?.topMines || DEFAULT_DASHBOARD_DATA.topMines;
+  const currentRole: UserRole = user?.role || 'SUPER_ADMIN';
 
-  // Dynamic severity breakdown from violations
-  const rawSeverityCounts = severityCounts || DEFAULT_DASHBOARD_DATA.severityCounts;
-  const criticalCount = Number(rawSeverityCounts?.CRITICAL ?? 4);
-  const highCount = Number(rawSeverityCounts?.HIGH ?? 6);
-  const mediumCount = Number(rawSeverityCounts?.MEDIUM ?? 3);
-  const lowCount = Number(rawSeverityCounts?.LOW ?? 2);
-  const totalViolationsCount = criticalCount + highCount + mediumCount + lowCount || 15;
-
-  const severityPieData = [
-    {
-      name: 'CRITICAL',
-      label: t('risk.CRITICAL', 'Critical Priority'),
-      value: criticalCount,
-      percent: Math.round((criticalCount / totalViolationsCount) * 100),
-      color: '#e11d48',
-      lightBg: 'bg-rose-50 border-rose-200 text-rose-900',
-      badgeBg: 'bg-rose-600 text-white',
-      desc: 'Immediate Prohibition (Sec 22A)',
-      fine: '₹5,00,000 max',
-      icon: '🔴'
-    },
-    {
-      name: 'HIGH',
-      label: t('risk.HIGH', 'High Priority'),
-      value: highCount,
-      percent: Math.round((highCount / totalViolationsCount) * 100),
-      color: '#ea580c',
-      lightBg: 'bg-orange-50 border-orange-200 text-orange-900',
-      badgeBg: 'bg-orange-600 text-white',
-      desc: '14-Day DGMS Rectification',
-      fine: '₹3,00,000 max',
-      icon: '🟠'
-    },
-    {
-      name: 'MEDIUM',
-      label: t('risk.MEDIUM', 'Medium Risk'),
-      value: mediumCount,
-      percent: Math.round((mediumCount / totalViolationsCount) * 100),
-      color: '#d97706',
-      lightBg: 'bg-amber-50 border-amber-200 text-amber-900',
-      badgeBg: 'bg-amber-600 text-white',
-      desc: 'Operational Defect Notice',
-      fine: '₹1,00,000 max',
-      icon: '🟡'
-    },
-    {
-      name: 'LOW',
-      label: t('risk.LOW', 'Low Advisory'),
-      value: lowCount,
-      percent: Math.round((lowCount / totalViolationsCount) * 100),
-      color: '#16a34a',
-      lightBg: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-      badgeBg: 'bg-emerald-600 text-white',
-      desc: 'Advisory / Minor Record',
-      fine: '₹30,000 max',
-      icon: '🟢'
+  const renderRoleDashboard = () => {
+    switch (currentRole) {
+      case 'WORKER':
+        return <WorkerDashboard />;
+      case 'HQ_MANAGEMENT':
+        return <HQManagementDashboard />;
+      case 'MINE_MANAGER':
+        return <MineManagerDashboard />;
+      case 'SAFETY_INSPECTOR':
+        return <SafetyInspectorDashboard />;
+      case 'COMPLIANCE_OFFICER':
+        return <ComplianceOfficerDashboard />;
+      case 'CONTRACTOR':
+        return <ContractorDashboard />;
+      case 'SUPER_ADMIN':
+      default:
+        return <SuperAdminDashboard data={data} />;
     }
-  ];
+  };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-gov-dark via-gov-primary to-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-black uppercase tracking-widest text-gov-gold bg-gov-gold/10 px-2 py-0.5 rounded border border-gov-gold/30">
-              {t(`role.${user?.role}` as string, user?.role?.replace(/_/g, ' ') || 'STATUTORY OVERVIEW')}
-            </span>
-            <span className="text-xs text-slate-300">• {user?.name || 'Officer'}</span>
-          </div>
-          <h1 className="text-2xl font-black tracking-tight">
-            {t('header.portalTitle', 'Coal Mine Statutory Compliance & Governance Dashboard')}
-          </h1>
-          <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-            {t('header.portalSubtitle', 'Real-time multi-tier statutory oversight across Indian coal collieries under the Mines Act 1952, CMR 2017, and CPCB guidelines.')}
-          </p>
-        </div>
-
-        {/* Role-Specific Quick Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          {hasRole(['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'HQ_MANAGEMENT']) && (
-            <button
-              onClick={() => navigate('/inspections?new=true')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-gov-gold text-slate-950 rounded-lg hover:bg-amber-400 transition-colors shadow-sm cursor-pointer"
-            >
-              <ClipboardList className="w-4 h-4" />
-              {t('btn.scheduleAudit', 'Schedule Audit')}
-            </button>
-          )}
-
-          {hasRole(['SUPER_ADMIN', 'SAFETY_INSPECTOR']) && (
-            <button
-              onClick={() => navigate('/violations?new=true')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm cursor-pointer"
-            >
-              <AlertOctagon className="w-4 h-4" />
-              {t('btn.issueNotice', 'Issue Violation Notice')}
-            </button>
-          )}
-
-          {hasRole(['MINE_MANAGER', 'COMPLIANCE_OFFICER']) && (
-            <button
-              onClick={() => navigate('/documents')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-gov-gold text-slate-950 rounded-lg hover:bg-amber-400 transition-colors shadow-sm cursor-pointer"
-            >
-              <UploadCloud className="w-4 h-4" />
-              {t('btn.uploadDoc', 'Upload Clearance')}
-            </button>
-          )}
-
-          {hasRole(['CONTRACTOR', 'MINE_MANAGER']) && (
-            <button
-              onClick={() => navigate('/actions')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer"
-            >
-              <CheckSquare className="w-4 h-4" />
-              {t('btn.assignCapa', 'Assigned CAPA Tasks')}
-            </button>
-          )}
-
-          {hasRole(['SUPER_ADMIN', 'HQ_MANAGEMENT']) && (
-            <button
-              onClick={() => navigate('/ai-governance')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors backdrop-blur-xs cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-gov-gold" />
-              {t('btn.aiRiskEngine', 'AI Risk Engine')}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Primary KPI Scorecards (Real DB Data) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title={t('dash.totalMines', 'Total Collieries')}
-          value={kpis?.totalMines ?? 15}
-          subtitle={`${kpis?.compliantMines ?? 10} Compliant • ${kpis?.atRiskMines ?? 3} At Risk • ${kpis?.criticalMines ?? 2} Critical`}
-          icon={Mountain}
-          variant="info"
-          onClick={() => navigate('/mines')}
-        />
-        <StatCard
-          title={t('dash.criticalViolations', 'Critical Violations')}
-          value={kpis?.criticalViolations ?? 4}
-          subtitle={`${kpis?.activeViolations ?? 15} Total Active Violations`}
-          icon={AlertOctagon}
-          variant="danger"
-          onClick={() => navigate('/violations?severity=CRITICAL')}
-        />
-        <StatCard
-          title={t('dash.overdueCapas', 'Overdue CAPAs')}
-          value={kpis?.overdueActions ?? 3}
-          subtitle={`${kpis?.pendingActions ?? 12} Remediation Actions Pending`}
-          icon={Clock}
-          variant="warning"
-          onClick={() => navigate('/actions?overdueOnly=true')}
-        />
-        <StatCard
-          title={t('dash.complianceIndex', 'National Compliance Index')}
-          value={`${kpis?.avgComplianceScore ?? 86.4}%`}
-          subtitle="Statutory target >= 85.0%"
-          icon={Award}
-          variant="success"
-          trend={{ value: '+3.2%', isPositive: true }}
-          onClick={() => navigate('/compliance')}
-        />
-      </div>
-
-      {/* Secondary Quick Indicators */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-xs">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-amber-50 text-amber-600">
-            <Clock className="w-4 h-4" />
+    <div className="space-y-6">
+      {/* Interactive Quick Role Switcher Banner */}
+      <div className="bg-white rounded-xl shadow-xs border border-slate-200/90 p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="p-1.5 rounded-lg bg-gov-primary/10 text-gov-primary">
+            <Sparkles className="w-4 h-4 text-gov-gold" />
           </div>
           <div>
-            <p className="text-slate-400 font-semibold text-[10px] uppercase">{t('dash.upcomingDeadlines', 'Upcoming Deadlines')}</p>
-            <p className="text-base font-extrabold text-slate-800">{kpis?.upcomingDeadlines ?? 7} {t('dash.obligations', 'Obligations')}</p>
+            <p className="text-xs font-black text-slate-800 tracking-tight leading-none">
+              Role-Based Governance View
+            </p>
+            <p className="text-[10px] text-slate-500 font-medium mt-0.5">
+              Switch role to view dedicated tailored dashboard, analytics & controls:
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-rose-50 text-rose-600">
-            <FileWarning className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-slate-400 font-semibold text-[10px] uppercase">{t('dash.expiredClearances', 'Expired Clearances')}</p>
-            <p className="text-base font-extrabold text-slate-800">{kpis?.expiredDocuments ?? 2} {t('dash.documents', 'Documents')}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-600">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-slate-400 font-semibold text-[10px] uppercase">{t('dash.safetyScore', 'Safety Score')}</p>
-            <p className="text-base font-extrabold text-slate-800">{kpis?.avgSafetyScore ?? 92} / 100</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-sky-50 text-sky-600">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-slate-400 font-semibold text-[10px] uppercase">{t('dash.envScore', 'Environmental Score')}</p>
-            <p className="text-base font-extrabold text-slate-800">{kpis?.avgEnvScore ?? 88} / 100</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Recharts Data Visualization Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* 6-Month Statutory Compliance vs Violations Trend */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">{t('dash.monthlyTrends', 'National Compliance & Violation Trends')}</h3>
-              <p className="text-xs text-slate-500">{t('dash.monthlyTrendsSubtitle', '6-Month rolling statutory score vs active enforcement notices')}</p>
-            </div>
-            <span className="text-xs font-bold text-gov-primary bg-gov-primary/10 px-2 py-1 rounded">
-              Monthly Aggregates
-            </span>
-          </div>
-
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="compGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#13395e" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#13395e" stopOpacity={0.0}/>
-                  </linearGradient>
-                  <linearGradient id="violGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#e11d48" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#e11d48" stopOpacity={0.0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', fontSize: '11px' }}
-                />
-                <Area type="monotone" dataKey="complianceRate" name="Compliance Rate (%)" stroke="#13395e" strokeWidth={2.5} fillOpacity={1} fill="url(#compGrad)" />
-                <Area type="monotone" dataKey="activeViolations" name="Active Violations" stroke="#e11d48" strokeWidth={2} fillOpacity={1} fill="url(#violGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Violations by Severity (Enhanced Visual Gauge & Donut Chart) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
-                <AlertOctagon className="w-4 h-4 text-rose-600" />
-                {t('dash.violationsBySeverity', 'Violations by Severity')}
-              </h3>
-              <p className="text-xs text-slate-500">{t('dash.violationsSubtitle', 'Live breakdown of active enforcement alerts')}</p>
-            </div>
-            <button
-              onClick={() => navigate('/violations')}
-              className="text-xs text-gov-primary hover:text-white bg-gov-primary/10 hover:bg-gov-primary font-bold flex items-center gap-1 px-3 py-1 rounded-lg border border-gov-primary/20 transition-all shadow-xs cursor-pointer"
-            >
-              {totalViolationsCount} {t('dash.notices', 'Notices')} →
-            </button>
-          </div>
-
-          {/* Visual Segmented Health Bar */}
-          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-            <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-1.5">
-              <span>Severity Distribution Spectrum</span>
-              <span className="font-mono text-slate-500">{totalViolationsCount} {t('dash.notices', 'Notices')}</span>
-            </div>
-            <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
-              {severityPieData.map((item) => (
-                <div
-                  key={item.name}
-                  style={{ width: `${item.percent}%`, backgroundColor: item.color }}
-                  className="h-full transition-all hover:opacity-90 relative"
-                  title={`${item.label}: ${item.value} (${item.percent}%)`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Donut Chart with proper centered layout */}
-          <div className="h-44 w-full relative flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={severityPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={46}
-                  outerRadius={68}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {severityPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke="#ffffff" strokeWidth={2} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const d = payload[0].payload;
-                      return (
-                        <div className="bg-slate-900 text-white p-2.5 rounded-lg shadow-xl text-xs border border-slate-700 space-y-1">
-                          <div className="flex items-center gap-1.5 font-bold">
-                            <span>{d.icon}</span>
-                            <span>{d.label}</span>
-                          </div>
-                          <p className="text-gov-gold font-extrabold text-sm">{d.value} Active Notices ({d.percent}%)</p>
-                          <p className="text-[10px] text-slate-300">{d.desc}</p>
-                          <p className="text-[10px] text-slate-400">Statutory Fine: {d.fine}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-black text-slate-900">{totalViolationsCount}</span>
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{t('dash.totalAlerts', 'Total Alerts')}</span>
-            </div>
-          </div>
-
-          {/* 4 Spacious Severity Cards (Clean Grid Below Chart) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-            {severityPieData.map((item) => (
-              <div
-                key={item.name}
-                onClick={() => navigate(`/violations?severity=${item.name}`)}
-                className={`p-3 rounded-xl border transition-all cursor-pointer shadow-xs hover:shadow-md hover:scale-[1.01] ${item.lightBg}`}
+        {/* Role Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          {ALL_ROLES.map(({ role, labelKey, defaultLabel, icon: Icon }) => {
+            const isActive = currentRole === role;
+            return (
+              <button
+                key={role}
+                type="button"
+                onClick={() => switchRole(role)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-gov-primary text-white shadow-xs font-extrabold ring-2 ring-gov-gold/40'
+                    : 'bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 border border-slate-200/70'
+                }`}
+                title={`Switch to ${defaultLabel} Dashboard`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-black tracking-tight flex items-center gap-1.5">
-                    <span>{item.icon}</span> {item.label}
-                  </span>
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${item.badgeBg}`}>
-                    {item.percent}%
-                  </span>
-                </div>
-                <div className="flex items-baseline justify-between mt-1">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-black">{item.value}</span>
-                    <span className="text-xs font-semibold opacity-80">{t('dash.notices', 'notices')}</span>
-                  </div>
-                  <span className="text-[10px] font-semibold opacity-75">{item.fine}</span>
-                </div>
-                <p className="text-[10px] opacity-80 mt-1 truncate">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-gov-gold' : 'text-slate-500'}`} />
+                <span>{t(labelKey, defaultLabel)}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Recharts Data Visualization Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Compliance by Category */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">{t('dash.complianceByCategory', 'Compliance by Statutory Category')}</h3>
-              <p className="text-xs text-slate-500">{t('dash.categorySubtitle', 'Conformity across safety, environmental, and labour acts')}</p>
-            </div>
-            <button
-              onClick={() => navigate('/compliance')}
-              className="text-xs text-gov-primary hover:underline font-bold flex items-center gap-1 cursor-pointer"
-            >
-              {t('dash.allMines', 'View All')} <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="h-60 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={complianceByCategory} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="category" tick={{ fontSize: 10 }} angle={-15} textAnchor="end" />
-                <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', fontSize: '11px' }}
-                />
-                <Bar dataKey="rate" name="Conformity Rate (%)" fill="#13395e" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Colliery Risk Ranking List */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">{t('dash.collieryBenchmarks', 'Colliery Compliance & Risk Benchmarks')}</h3>
-              <p className="text-xs text-slate-500">{t('dash.benchmarksSubtitle', 'Mines requiring prioritized statutory intervention')}</p>
-            </div>
-            <button
-              onClick={() => navigate('/mines')}
-              className="text-xs text-gov-primary hover:underline font-bold flex items-center gap-1 cursor-pointer"
-            >
-              {t('dash.allMines', 'All Mines')} <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-2.5">
-            {topMines.map((m: any) => (
-              <div
-                key={m.id}
-                onClick={() => navigate(`/mines/${m.id}`)}
-                className="p-3 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-slate-100 transition-colors flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded bg-gov-primary/10 text-gov-primary font-bold text-xs flex items-center justify-center">
-                    ⛏
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">{m.name}</p>
-                    <p className="text-[11px] text-slate-500">{m.code} • {m.state}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-xs font-extrabold text-slate-800">{m.score}%</p>
-                    <p className="text-[10px] text-slate-400">{m.violationsCount} {t('dash.notices', 'open viols')}</p>
-                  </div>
-                  <StatusBadge status={m.risk} type="risk" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
+      {/* Render Dynamic Role-Based Custom Dashboard */}
+      {renderRoleDashboard()}
     </div>
   );
 };

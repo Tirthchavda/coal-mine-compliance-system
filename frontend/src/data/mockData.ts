@@ -2563,6 +2563,18 @@ export const MOCK_USERS: User[] = [
     updatedAt: '2026-08-01T00:00:00Z'
   },
   {
+    id: 'usr-worker',
+    name: 'Rameshwar Mahato (Shift Safety Steward)',
+    email: 'worker@mine.gov.in',
+    role: 'WORKER',
+    department: 'Underground Seam IV - Frontline Extraction Team',
+    assignedMineId: 'mine-jharia-01',
+    phone: '+91-94301-55219',
+    status: 'ACTIVE',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2026-08-01T00:00:00Z'
+  },
+  {
     id: 'usr-inspector-cz',
     name: 'Dr. K. S. Rao (Deputy Director of Mines Safety)',
     email: 'ksrao@dgms.gov.in',

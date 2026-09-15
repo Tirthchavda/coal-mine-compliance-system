@@ -82,6 +82,18 @@ const FALLBACK_USERS: Record<string, User> = {
     status: 'ACTIVE',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2026-08-01T00:00:00Z'
+  },
+  'worker@mine.gov.in': {
+    id: 'usr-worker',
+    name: 'Rameshwar Mahato (Shift Safety Steward)',
+    email: 'worker@mine.gov.in',
+    role: 'WORKER',
+    department: 'Underground Seam IV - Frontline Extraction Team',
+    assignedMineId: 'mine-jharia-01',
+    phone: '+91-94301-55219',
+    status: 'ACTIVE',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2026-08-01T00:00:00Z'
   }
 };
 

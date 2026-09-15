@@ -47,7 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       defaultLabel: 'Dashboard',
       icon: LayoutDashboard,
       badge: null,
-      roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER', 'CONTRACTOR']
+      roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER', 'CONTRACTOR', 'WORKER']
     },
     {
       to: '/mines',
@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       defaultLabel: 'Statutory Compliance',
       icon: ShieldCheck,
       badge: null,
-      roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']
+      roles: ['SUPER_ADMIN', 'HQ_MANAGEMENT', 'MINE_MANAGER', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER', 'WORKER']
     },
     {
       to: '/inspections',
@@ -87,7 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       defaultLabel: 'Violations Tracker',
       icon: AlertOctagon,
       badge: 'Live',
-      roles: ['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'HQ_MANAGEMENT', 'COMPLIANCE_OFFICER']
+      roles: ['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'HQ_MANAGEMENT', 'COMPLIANCE_OFFICER', 'WORKER']
     },
     {
       to: '/actions',
@@ -95,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       defaultLabel: 'Corrective Actions (CAPA)',
       icon: CheckSquare,
       badge: null,
-      roles: ['SUPER_ADMIN', 'MINE_MANAGER', 'CONTRACTOR', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER']
+      roles: ['SUPER_ADMIN', 'MINE_MANAGER', 'CONTRACTOR', 'SAFETY_INSPECTOR', 'COMPLIANCE_OFFICER', 'WORKER']
     },
     {
       to: '/documents',
@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       defaultLabel: 'Safety Governance',
       icon: HeartPulse,
       badge: null,
-      roles: ['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'CONTRACTOR']
+      roles: ['SUPER_ADMIN', 'SAFETY_INSPECTOR', 'MINE_MANAGER', 'CONTRACTOR', 'WORKER']
     },
     {
       to: '/environment',

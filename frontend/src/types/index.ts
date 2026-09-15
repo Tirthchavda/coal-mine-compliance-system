@@ -4,7 +4,8 @@ export type UserRole =
   | 'MINE_MANAGER' 
   | 'SAFETY_INSPECTOR' 
   | 'COMPLIANCE_OFFICER' 
-  | 'CONTRACTOR';
+  | 'CONTRACTOR'
+  | 'WORKER';
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 export type MineType = 'OPENCAST' | 'UNDERGROUND' | 'MIXED';
