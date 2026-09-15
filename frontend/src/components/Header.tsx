@@ -144,35 +144,32 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           {/* Right: Language Segmented Switcher + Role + Alerts + Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
             
-            {/* 🌐 Sleek Dual-Pill Language Switcher (Direct 1-Click Toggle) */}
+            {/* 🌐 Clean Dual-Pill Language Switcher (English | हिन्दी) */}
             <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-300/80 shadow-inner">
               <button
                 type="button"
                 onClick={() => setLanguage('en')}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   language === 'en'
                     ? 'bg-gov-primary text-white shadow-xs font-extrabold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                 }`}
                 title="Switch to English"
               >
-                <span>🇬🇧</span>
-                <span className="hidden sm:inline">English</span>
-                <span className="sm:hidden">EN</span>
+                English
               </button>
 
               <button
                 type="button"
                 onClick={() => setLanguage('hi')}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   language === 'hi'
                     ? 'bg-gov-primary text-white shadow-xs font-extrabold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                 }`}
                 title="हिन्दी में बदलें"
               >
-                <span>🇮🇳</span>
-                <span>हिन्दी</span>
+                हिन्दी
               </button>
             </div>
 
