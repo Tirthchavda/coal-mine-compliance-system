@@ -94,65 +94,65 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       {/* Top Indian Government Tricolor Stripe */}
       <div className="gov-tricolor-stripe"></div>
 
-      <div className="px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16 gap-4">
+      <div className="px-3 sm:px-5 lg:px-6">
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
           
           {/* Left: Mobile Toggle & Government Portal Branding */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 min-w-0">
             <button
               onClick={onToggleSidebar}
-              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
+              className="lg:hidden p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
               aria-label="Toggle navigation menu"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <div className="flex items-center gap-2.5 cursor-pointer min-w-0" onClick={() => navigate('/dashboard')}>
               {/* Emblem / Logo */}
               <div className="w-9 h-9 rounded-lg bg-gov-dark flex items-center justify-center text-white font-serif font-bold shadow-xs border border-slate-700 shrink-0">
                 <span className="text-gov-gold text-base">⚖</span>
               </div>
-              <div className="hidden sm:block">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xs sm:text-sm font-extrabold text-gov-dark tracking-tight leading-none uppercase">
+              <div className="hidden sm:block min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-xs sm:text-sm font-extrabold text-gov-dark tracking-tight leading-none uppercase truncate">
                     {t('header.portalSubtitle', 'MINISTRY OF COAL • DGMS')}
                   </h1>
                   <span className="hidden xl:inline-block bg-gov-gold/20 text-gov-gold text-[9px] font-bold px-1.5 py-0.5 rounded border border-gov-gold/30 shrink-0">
                     DGMS PORTAL
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate hidden lg:block max-w-[280px]">
-                  {t('header.portalTitle', 'Coal Mine Statutory Compliance & Governance Monitoring System')}
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate hidden md:block">
+                  {t('header.portalTitle', 'DGMS Statutory Compliance Portal')}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Middle: Global Search (Separated in the center with plenty of space) */}
-          <div className="hidden md:flex flex-1 max-w-xs lg:max-w-sm xl:max-w-md mx-4">
+          {/* Middle: Global Search (Only on large screens to preserve layout) */}
+          <div className="hidden xl:flex flex-1 max-w-xs 2xl:max-w-sm mx-4">
             <form onSubmit={handleSearchSubmit} className="w-full relative">
               <input
                 type="text"
-                placeholder={t('header.searchPlaceholder', 'Search statutory regulations, mines...')}
+                placeholder={t('header.searchPlaceholder', 'Search regulations, mines...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gov-primary transition-all text-slate-900"
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gov-primary transition-all text-slate-900"
               />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
             </form>
           </div>
 
           {/* Right: Distinct User Action Controls (Language + Role + Bell + Profile) */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
             
             {/* 🌐 Standalone Dual-Pill Language Switcher (English | हिन्दी) */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-300 shadow-2xs shrink-0">
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0">
               <button
                 type="button"
                 onClick={() => setLanguage('en')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                   language === 'en'
-                    ? 'bg-gov-primary text-white shadow-xs'
+                    ? 'bg-gov-primary text-white shadow-xs font-extrabold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
                 title="Switch to English"
@@ -163,9 +163,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={() => setLanguage('hi')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                   language === 'hi'
-                    ? 'bg-gov-primary text-white shadow-xs'
+                    ? 'bg-gov-primary text-white shadow-xs font-extrabold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
                 title="हिन्दी में बदलें"
@@ -175,9 +175,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             </div>
 
             {/* Official Role Badge */}
-            <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gov-primary/10 text-gov-primary border border-gov-primary/30 rounded-lg shrink-0">
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-gov-primary/10 text-gov-primary border border-gov-primary/30 rounded-lg shrink-0">
               <Shield className="w-3.5 h-3.5 text-gov-gold shrink-0" />
-              <span className="hidden xl:inline text-slate-500 font-medium">{t('header.activeRole', 'Role')}:</span>
               <span className="font-extrabold text-gov-primary truncate max-w-[120px]">
                 {t(`role.${user?.role}` as string, user?.role?.replace(/_/g, ' ') || 'Officer')}
               </span>
@@ -190,7 +189,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                   setShowAlertsDropdown(!showAlertsDropdown);
                   setShowUserDropdown(false);
                 }}
-                className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
+                className="relative p-1.5 sm:p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
                 title={t('header.notifications', 'Statutory Alerts & Notifications')}
               >
                 <Bell className="w-5 h-5" />

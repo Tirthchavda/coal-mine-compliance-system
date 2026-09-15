@@ -26,9 +26,9 @@ export const TRANSLATIONS: TranslationDictionary = {
   'nav.auditLogs': { en: 'System Audit Trail', hi: 'सिस्टम ऑडिट लॉग्स' },
 
   // Header
-  'header.portalTitle': { en: 'National Coal Mine Statutory Compliance Portal', hi: 'राष्ट्रीय कोयला खदान वैधानिक अनुपालन पोर्टल' },
-  'header.portalSubtitle': { en: 'Ministry of Coal • Directorate General of Mines Safety (DGMS)', hi: 'कोयला मंत्रालय • खान सुरक्षा महानिदेशालय (DGMS)' },
-  'header.searchPlaceholder': { en: 'Search statutory regulations, mines, alerts...', hi: 'वैधानिक नियम, खदानें, अलर्ट खोजें...' },
+  'header.portalTitle': { en: 'DGMS Statutory Compliance Portal', hi: 'डीजीएमएस वैधानिक अनुपालन पोर्टल' },
+  'header.portalSubtitle': { en: 'Ministry of Coal • DGMS', hi: 'कोयला मंत्रालय • DGMS' },
+  'header.searchPlaceholder': { en: 'Search regulations, mines...', hi: 'नियम, खदानें खोजें...' },
   'header.activeRole': { en: 'Active Role', hi: 'सक्रिय भूमिका' },
   'header.switchRole': { en: 'Switch Role', hi: 'भूमिका बदलें' },
   'header.notifications': { en: 'Notifications', hi: 'सूचनाएं' },
